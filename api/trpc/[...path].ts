@@ -354,8 +354,8 @@ function explainLine(source: string) {
     const plainMeaning = completeSentence(everydayWords(meaning)).replace(/[.!?]$/, "");
     const embeddedMeaning = `${plainMeaning.charAt(0).toLowerCase()}${plainMeaning.slice(1)}`;
     return verb.toLowerCase() === "includes"
-      ? `When this law says “${term.trim()},” it also counts ${embeddedMeaning}.`
-      : `Here, “${term.trim()}” has a special meaning: ${embeddedMeaning}.`;
+      ? `Here, “${term.trim()}” is used more broadly than its everyday label. It can cover ${embeddedMeaning}.`
+      : `Here, “${term.trim()}” is given a special definition. It refers to ${embeddedMeaning}.`;
   }
   return `In everyday terms, ${practicalRestatement(shortenSource(source, 240))}`;
 }

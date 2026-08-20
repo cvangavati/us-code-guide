@@ -59,7 +59,7 @@ describe("Vercel public reader API", () => {
     expect(guide.label).toBe("Plain-English guide — not legal advice");
     expect(guide.generated).toBe(true);
     expect(guide.summary).toMatch(/county/i);
-    expect(guide.summary).toMatch(/when this law says/i);
+    expect(guide.summary).toMatch(/used more broadly/i);
     expect(guide.keyPoints[0]).toMatch(/^Line 1:/);
     expect(guide.keyPoints.join(" ")).not.toMatch(/read that sentence|should|mandatory wording/i);
     expect(guide.keyPoints.join(" ")).not.toMatch(/July|Stat\./i);
@@ -101,7 +101,7 @@ describe("Vercel public reader API", () => {
       ],
     });
 
-    expect(guide.keyPoints[0]).toBe("Line 1: When this law says “county,” it also counts the District of Columbia and Puerto Rico.");
+    expect(guide.keyPoints[0]).toBe("Line 1: Here, “county” is used more broadly than its everyday label. It can cover the District of Columbia and Puerto Rico.");
     expect(guide.keyPoints[0]).not.toContain("term “county” includes");
     expect(guide.keyPoints[0]).not.toContain("For the purposes of this section");
     expect(guide.keyPoints[1]).toBe("Line 2: In everyday terms, The Secretary has to send a report to Congress each year.");

@@ -104,9 +104,9 @@ describe("U.S. Code content model", () => {
       trace: { summaryParagraphs: [1], keyPointParagraphs: [[1]], watchForParagraphs: [[1]] },
     }, sourceLines);
 
-    expect(guide.summary).toBe("When this law says “county,” it also counts the District of Columbia and Puerto Rico.");
+    expect(guide.summary).toBe("Here, “county” is used more broadly than its everyday label. It can cover the District of Columbia and Puerto Rico.");
     expect(guide.keyPoints).toEqual([
-      "When this law says “county,” it also counts the District of Columbia and Puerto Rico.",
+      "Here, “county” is used more broadly than its everyday label. It can cover the District of Columbia and Puerto Rico.",
       "In everyday terms, The Secretary has to send a report to Congress each year.",
     ]);
     expect(guide.trace.keyPointParagraphs).toEqual([[1], [2]]);
