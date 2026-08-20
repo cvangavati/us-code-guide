@@ -56,3 +56,6 @@
 - [x] Verify the hardened project, then save and synchronize a GitHub checkpoint.
 - [x] Add conservative public-response security headers and verify that API responses do not include unnecessary framework or environment details.
 - [x] Verify the hardened headers and absence of framework fingerprinting on a live `/api/trpc` response.
+- [x] Diagnose why the Vercel deployment serves the server bundle instead of the client application.
+- [x] Add a compatible Vercel deployment configuration without exposing server-side secrets.
+- [ ] Verify the deployment build and document the Vercel configuration requirements, then save a synchronized checkpoint.

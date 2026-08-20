@@ -62,6 +62,14 @@ Tests cover citation and navigation helpers, official-text normalization, plain-
 
 The project is connected to the `user_github` remote. Saving a managed project checkpoint synchronizes the current committed state with the connected GitHub repository. Avoid force-pushes or destructive resets; use managed checkpoints to preserve a recoverable history.
 
+## Deployment
+
+The supported deployment path is the project’s managed hosting, which keeps its server-only configuration in the hosting environment and supports custom domains. If you use a different host, it must serve the **Vite client build** rather than the bundled Node server file.
+
+The included `vercel.json` is an external-host compatibility layer. It runs `pnpm run build:client`, serves only `dist/public`, preserves reader URLs such as `/read/18/1030`, and routes `/api/*` through the Express/tRPC Vercel Function at `api/[...path].ts`. In Vercel, use the repository root and do not override the Output Directory to `dist`; the configuration sets it to `dist/public` deliberately.
+
+> Do not copy Manus-managed environment values or keys into another host. Browser-local reading lists work without a database. The official-text reader uses public government sources, but provider-backed plain-English generation and Manus OAuth/storage routes require a separately configured, Vercel-compatible server-side service if you intend to use those optional routes outside managed hosting.
+
 ## Future improvements
 
 The next major data enhancement is a release-point ingestion pipeline that normalizes and indexes all official title/chapter/section headings and full text on the server, while continuing to send only the relevant result or section to the reader.
