@@ -59,3 +59,4 @@
 - [x] Diagnose why the Vercel deployment serves the server bundle instead of the client application.
 - [x] Add a compatible Vercel deployment configuration without exposing server-side secrets.
 - [ ] Verify the deployment build and document the Vercel configuration requirements, then save a synchronized checkpoint.
+- [ ] Resolve the Vercel `/api/trpc` function startup failure and verify a live non-fallback section response.
