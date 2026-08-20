@@ -273,7 +273,7 @@ function everydayWords(text: string) {
 
 function explainLine(source: string) {
   const normalized = source.replace(/\s+/g, " ").trim();
-  if (/^In determining the meaning of any Act of Congress, except when the context indicates otherwise/i.test(normalized)) {
+  if (/In determining the meaning of any Act of Congress, except when the context indicates otherwise/i.test(normalized)) {
     return "These are default rules for reading federal laws. A particular law can use a word differently when its own wording makes that clear.";
   }
   if (/words importing the singular include and apply to several/i.test(normalized)) {
