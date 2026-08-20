@@ -17,11 +17,24 @@ export type PlainEnglishGuide = {
   generated: boolean;
 };
 
+export type OfficialTableBlock = {
+  type: "table";
+  caption?: string;
+  headers: string[];
+  rows: string[][];
+};
+
+export type OfficialContentBlock =
+  | { type: "paragraph"; text: string }
+  | OfficialTableBlock;
+
 export type CodeSection = {
   title: number;
   section: string;
   heading: string;
   officialText: string[];
+  /** Ordered source blocks used to retain statutory tables in the reader. */
+  officialBlocks?: OfficialContentBlock[];
   sourceUrl: string;
   sourceName: string;
   sourceStatus: "live official source" | "archived official source" | "verified local fallback" | "official source link";

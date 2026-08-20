@@ -43,4 +43,21 @@ describe("Vercel public reader API", () => {
     expect(section.heading).toContain("County");
     expect(section.officialText[0]).toContain("county");
   }, 30_000);
+
+  it("returns a clearly labeled reading guide through the reader's Vercel mutation contract", async () => {
+    const server = createServer(handler);
+    servers.push(server);
+    await new Promise<void>(resolve => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("Expected a TCP server address");
+
+    const client = createTRPCClient<AppRouter>({
+      links: [httpBatchLink({ url: `http://127.0.0.1:${address.port}/api/trpc`, transformer: superjson })],
+    });
+    const guide = await client.usCode.explain.mutate({ title: 1, section: "2" });
+
+    expect(guide.label).toBe("Plain-English guide — not legal advice");
+    expect(guide.generated).toBe(true);
+    expect(guide.summary).toMatch(/official language/i);
+  }, 30_000);
 });

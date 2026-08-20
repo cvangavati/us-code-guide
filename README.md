@@ -6,7 +6,7 @@ The People’s U.S. Code Guide is a browser-efficient, plain-English companion f
 
 | Capability | Behavior |
 |---|---|
-| Official-text reader | Retrieves one requested U.S. Code section at a time and retains an official-source link and status label. |
+| Official-text reader | Retrieves one requested U.S. Code section at a time, retains an official-source link and status label, and preserves source tables as accessible tables when the official document supplies them. |
 | Plain-English guide | Keeps a non-advisory explanation distinct from the statutory text and links guide claims back to displayed paragraphs. |
 | Discovery | Offers title, topic, chapter, section, representative-section, citation, and plain-language search paths. |
 | Search scope | Labels curated guide results separately from official citation-index results, with an official GovInfo full-Code search link for broader queries. |
@@ -71,6 +71,8 @@ The included `vercel.json` is an external-host compatibility layer. It runs `pnp
 If a public official-text request fails, the reader preserves the requested citation and displays a clear recovery panel with a retry control and a direct official-source link. It does not leave readers in an indefinite loading state.
 
 > Do not copy Manus-managed environment values or keys into another host. Browser-local reading lists work without a database. The official-text reader uses public government sources, while provider-backed plain-English generation and Manus OAuth/storage routes remain intentionally outside the lightweight Vercel API. They require separately configured, Vercel-compatible server-side services if you intend to use those optional routes outside managed hosting.
+
+The Vercel reader’s **Make a plain-English guide** action remains available without a provider key. It returns a clearly labeled, source-grounded reading aid based only on the displayed official passages and preserves its non-advisory scope; the managed deployment can additionally use the provider-backed guide path.
 
 ## Future improvements
 

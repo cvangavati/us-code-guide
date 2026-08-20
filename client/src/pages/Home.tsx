@@ -64,6 +64,7 @@ function TraceLink({ paragraphs }: { paragraphs: number[] }) {
 
 function ReadingPanel({ section, guide, view, fontSize, density }: { section: CodeSection; guide?: PlainEnglishGuide; view: "official" | "guide" | "both"; fontSize: number; density: "comfortable" | "compact" }) {
   const isMissing = section.officialText.length === 0;
+  const officialBlocks = section.officialBlocks ?? section.officialText.map(text => ({ type: "paragraph" as const, text }));
   const readerPadding = density === "compact" ? "px-5 py-5 sm:px-6 lg:px-7 lg:py-7" : "px-5 py-6 sm:px-7 lg:px-9 lg:py-10";
   const officialPanel = (
     <article className={`min-w-0 bg-[#f9f5e8] ${readerPadding}`} style={{ fontSize: `${fontSize}rem` }}>
@@ -80,7 +81,16 @@ function ReadingPanel({ section, guide, view, fontSize, density }: { section: Co
         </div>
       ) : (
         <div className="law-serif space-y-5 text-[1.1rem] leading-8 text-[#37332c] sm:text-[1.18rem]">
-          {section.officialText.map((paragraph, index) => <p id={`official-${index + 1}`} className="scroll-mt-5" key={`${paragraph.slice(0, 16)}-${index}`}><span className="law-mono mr-2 text-[9px] text-[#948a77]">¶{index + 1}</span>{paragraph}</p>)}
+          {(() => {
+            let paragraphNumber = 0;
+            return officialBlocks.map((block, index) => {
+              if (block.type === "paragraph") {
+                paragraphNumber += 1;
+                return <p id={`official-${paragraphNumber}`} className="scroll-mt-5" key={`${block.text.slice(0, 16)}-${index}`}><span className="law-mono mr-2 text-[9px] text-[#948a77]">¶{paragraphNumber}</span>{block.text}</p>;
+              }
+              return <div className="overflow-x-auto rounded-lg border border-[#c9c0aa] bg-[#fffdf6]" key={`table-${index}`}><table className="min-w-full border-collapse text-left text-[0.92rem] leading-6"><caption className="caption-top px-4 py-3 text-left font-medium text-[#4f4a40]">{block.caption ?? "Official statutory table"}</caption>{block.headers.length > 0 && <thead className="bg-[#eee7d8] text-[#3e3a32]"><tr>{block.headers.map((header, headerIndex) => <th className="border-b border-[#c9c0aa] px-3 py-2 align-top font-medium" scope="col" key={`${header}-${headerIndex}`}>{header}</th>)}</tr></thead>}<tbody>{block.rows.map((row, rowIndex) => <tr className="border-b border-[#ddd4c0] last:border-b-0" key={`row-${rowIndex}`}>{row.map((cell, cellIndex) => <td className="px-3 py-2 align-top" key={`${cell}-${cellIndex}`}>{cell}</td>)}</tr>)}</tbody></table></div>;
+            });
+          })()}
         </div>
       )}
     </article>

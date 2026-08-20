@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { US_CODE_TITLES, titleLabel } from "../shared/usCode";
-import { compactOfficialHtml, extractGovInfoSection, extractGovInfoTitleIndex, govInfoTitleUrl, normalizePlainEnglishGuide, officialSectionUrl } from "./usCode";
+import { compactOfficialHtml, extractGovInfoSection, extractGovInfoTitleIndex, extractOfficialBlocks, govInfoTitleUrl, normalizePlainEnglishGuide, officialSectionUrl } from "./usCode";
 
 describe("U.S. Code content model", () => {
   it("exposes the complete 54-title navigation catalogue including the reserved title", () => {
@@ -52,6 +52,16 @@ describe("U.S. Code content model", () => {
       { section: "1030", heading: "Computer fraud" },
       { section: "1031", heading: "Major fraud" },
     ]);
+  });
+
+  it("preserves a source table as structured headers and rows instead of flattening it into a paragraph", () => {
+    const source = "<!-- documentid:18_1030 --><h3>§1030. Computer fraud</h3><p>Opening statutory language.</p><table><caption>Penalty levels</caption><tr><th>Conduct</th><th>Maximum term</th></tr><tr><td>Basic offense</td><td>One year</td></tr></table><p>Closing statutory language.</p><!-- documentid:18_1031 -->";
+    expect(extractOfficialBlocks(source, 18, "1030")).toContainEqual({
+      type: "table",
+      caption: "Penalty levels",
+      headers: ["Conduct", "Maximum term"],
+      rows: [["Basic offense", "One year"]],
+    });
   });
 
   it("adds a linked qualification notice when a generated guide misses a statutory exception", () => {

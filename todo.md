@@ -65,3 +65,6 @@
 - [x] Restore Vercel chapter and section-index retrieval so the external reader does not remain in a perpetual preview-loading state.
 - [x] Add an explicit, actionable reader state for failed official-section API requests so an outage never appears as an indefinite loading or blank reader.
 - [x] Add rendered coverage for a failed section request and verify the reader exposes recovery actions instead of an empty state.
+- [x] Preserve source tables as accessible tables in the official-text reader instead of flattening them into prose.
+- [ ] Restore the Plain-English guide action on the Vercel deployment without placing provider credentials in the client bundle.
+- [x] Add regression coverage for source-table rendering and Vercel guide-generation responses, then verify the public build.

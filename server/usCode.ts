@@ -1,4 +1,4 @@
-import type { CodeSection, PlainEnglishGuide } from "../shared/usCode";
+import type { CodeSection, OfficialContentBlock, OfficialTableBlock, PlainEnglishGuide } from "../shared/usCode";
 
 const OLRC_VIEW_URL = "https://uscode.house.gov/view.xhtml";
 const GOVINFO_ARCHIVE_YEAR = "2023";
@@ -155,6 +155,63 @@ export function extractGovInfoSection(html: string, title: number, section: stri
   return compactOfficialHtml(`${heading}\n${statute}`);
 }
 
+function sectionSourceFragment(html: string, title: number, section: string) {
+  const marker = `<!-- documentid:${title}_${section}`;
+  const start = html.indexOf(marker);
+  if (start < 0) return html;
+  const next = html.indexOf("<!-- documentid:", start + marker.length);
+  return html.slice(start, next >= 0 ? next : undefined);
+}
+
+function cleanCellHtml(html: string) {
+  return decodeHtml(html.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim());
+}
+
+function extractTableBlock(tableHtml: string): OfficialTableBlock | undefined {
+  const rows = Array.from(tableHtml.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi))
+    .map(row => Array.from(row[1].matchAll(/<(th|td)\b[^>]*>([\s\S]*?)<\/\1>/gi)).map(cell => cleanCellHtml(cell[2])).filter(Boolean))
+    .filter(row => row.length > 0);
+  if (rows.length === 0) return undefined;
+  const firstRow = tableHtml.match(/<tr\b[^>]*>([\s\S]*?)<\/tr>/i)?.[1] ?? "";
+  const caption = tableHtml.match(/<caption\b[^>]*>([\s\S]*?)<\/caption>/i)?.[1];
+  const hasHeaderCells = /<th\b/i.test(firstRow);
+  return {
+    type: "table",
+    caption: caption ? cleanCellHtml(caption) : undefined,
+    headers: hasHeaderCells ? rows[0] : [],
+    rows: hasHeaderCells ? rows.slice(1) : rows,
+  };
+}
+
+export function extractOfficialBlocks(html: string, title: number, section: string): OfficialContentBlock[] {
+  const fragment = sectionSourceFragment(html, title, section);
+  const blocks: OfficialContentBlock[] = [];
+  const tableMatcher = /<table\b[^>]*>[\s\S]*?<\/table>/gi;
+  let cursor = 0;
+  let tableMatch: RegExpExecArray | null;
+  while ((tableMatch = tableMatcher.exec(fragment)) !== null) {
+    compactOfficialHtml(fragment.slice(cursor, tableMatch.index)).forEach(text => blocks.push({ type: "paragraph", text }));
+    const table = extractTableBlock(tableMatch[0]);
+    if (table) blocks.push(table);
+    cursor = tableMatch.index + tableMatch[0].length;
+  }
+  compactOfficialHtml(fragment.slice(cursor)).forEach(text => blocks.push({ type: "paragraph", text }));
+  return blocks;
+}
+
+function sectionContentFromHtml(html: string, title: number, section: string) {
+  const blocks = extractOfficialBlocks(html, title, section);
+  const paragraphLines = blocks.filter((block): block is Extract<OfficialContentBlock, { type: "paragraph" }> => block.type === "paragraph").map(block => block.text);
+  const fallbackLines = extractGovInfoSection(html, title, section);
+  const readableLines = paragraphLines.length >= 2 ? paragraphLines : fallbackLines.length >= 2 ? fallbackLines : compactOfficialHtml(html);
+  const { heading } = splitHeading(readableLines, title, section);
+  const visibleBlocks = blocks.filter(block => block.type !== "paragraph" || block.text !== heading);
+  const officialText = visibleBlocks.length > 0
+    ? visibleBlocks.flatMap(block => block.type === "paragraph" ? [block.text] : [block.caption, ...block.headers, ...block.rows.flat()].filter((value): value is string => Boolean(value)))
+    : splitHeading(readableLines, title, section).officialText;
+  return { heading, officialText, officialBlocks: visibleBlocks.length > 0 ? visibleBlocks : undefined };
+}
+
 export type TitleSectionLink = { section: string; heading: string; chapter?: string };
 
 export function extractGovInfoTitleIndex(html: string, title: number): TitleSectionLink[] {
@@ -193,14 +250,15 @@ export async function getTitleSectionIndex(title: number): Promise<TitleSectionL
 async function getGovInfoArchiveSection(title: number, section: string, curated?: Pick<CodeSection, "heading" | "officialText" | "plainEnglish">): Promise<CodeSection | null> {
   try {
     const archiveUrl = govInfoTitleUrl(title);
-    const lines = extractGovInfoSection(await getGovInfoTitleHtml(title), title, section);
-    if (lines.length < 2) return null;
-    const { heading, officialText } = splitHeading(lines, title, section);
+    const archiveHtml = await getGovInfoTitleHtml(title);
+    const { heading, officialText, officialBlocks } = sectionContentFromHtml(archiveHtml, title, section);
+    if (officialText.length < 1) return null;
     return {
       title,
       section,
       heading,
       officialText,
+      officialBlocks,
       sourceUrl: archiveUrl,
       sourceName: `U.S. Government Publishing Office (GovInfo), ${GOVINFO_ARCHIVE_YEAR} title edition`,
       sourceStatus: "archived official source",
@@ -228,16 +286,14 @@ export async function getOfficialSection(title: number, section: string): Promis
 
     if (!response.ok) throw new Error(`OLRC returned ${response.status}`);
     const sourceHtml = await response.text();
-    const lines = extractGovInfoSection(sourceHtml, title, section);
-    const readableLines = lines.length >= 2 ? lines : compactOfficialHtml(sourceHtml);
-    if (readableLines.length < 2) throw new Error("OLRC response did not contain readable section text");
-
-    const { heading, officialText } = splitHeading(readableLines, title, section);
+    const { heading, officialText, officialBlocks } = sectionContentFromHtml(sourceHtml, title, section);
+    if (officialText.length < 1) throw new Error("OLRC response did not contain readable section text");
     const value: CodeSection = {
       title,
       section,
       heading,
       officialText,
+      officialBlocks,
       sourceUrl,
       sourceName: "Office of the Law Revision Counsel, U.S. House of Representatives",
       sourceStatus: "live official source",

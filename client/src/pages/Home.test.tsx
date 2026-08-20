@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -66,6 +66,25 @@ describe("reader interactions", () => {
   it("shows a representative section preview for an unselected title before it is opened", () => {
     render(<Home />);
     expect(screen.getByTitle("Choosing presidential electors").textContent).toBe("§1");
+  });
+
+  it("renders an official source table as a structured accessible table", () => {
+    const originalBlocks = section.officialBlocks;
+    section.officialBlocks = [
+      { type: "paragraph", text: section.officialText[0] },
+      { type: "table", caption: "Official rate table", headers: ["Category", "Rate"], rows: [["Example", "10 percent"]] },
+    ];
+    try {
+      render(<Home />);
+      const caption = screen.getAllByText("Official rate table")[0];
+      const table = caption.closest("table");
+      if (!table) throw new Error("Expected the official source table");
+      expect(table.textContent).toContain("Official rate table");
+      expect(within(table).getByRole("columnheader", { name: "Category" })).toBeTruthy();
+      expect(within(table).getByRole("cell", { name: "10 percent" })).toBeTruthy();
+    } finally {
+      section.officialBlocks = originalBlocks;
+    }
   });
 
   it("updates the reader route after selecting a discovered section", async () => {

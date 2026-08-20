@@ -12,6 +12,7 @@ type VercelResponse = {
 };
 
 type Citation = { title: number; section: string };
+type OfficialBlock = { type: "paragraph"; text: string } | { type: "table"; caption?: string; headers: string[]; rows: string[][] };
 
 const OLRC_VIEW_URL = "https://uscode.house.gov/view.xhtml";
 const GOVINFO_ARCHIVE_YEAR = "2023";
@@ -83,6 +84,41 @@ function extractGovInfoSection(html: string, title: number, section: string) {
   return compactOfficialHtml(`${heading}\n${statute}`);
 }
 
+function sectionFragment(html: string, title: number, section: string) {
+  const marker = `<!-- documentid:${title}_${section}`;
+  const start = html.indexOf(marker);
+  if (start < 0) return html;
+  const next = html.indexOf("<!-- documentid:", start + marker.length);
+  return html.slice(start, next >= 0 ? next : undefined);
+}
+
+function cleanCell(html: string) {
+  return decodeHtml(html.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim());
+}
+
+function sourceBlocks(html: string, title: number, section: string): OfficialBlock[] {
+  const fragment = sectionFragment(html, title, section);
+  const blocks: OfficialBlock[] = [];
+  const tableMatcher = /<table\b[^>]*>[\s\S]*?<\/table>/gi;
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+  while ((match = tableMatcher.exec(fragment)) !== null) {
+    compactOfficialHtml(fragment.slice(cursor, match.index)).forEach(text => blocks.push({ type: "paragraph", text }));
+    const rows = Array.from(match[0].matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi))
+      .map(row => Array.from(row[1].matchAll(/<(th|td)\b[^>]*>([\s\S]*?)<\/\1>/gi)).map(cell => cleanCell(cell[2])).filter(Boolean))
+      .filter(row => row.length > 0);
+    if (rows.length > 0) {
+      const firstRow = match[0].match(/<tr\b[^>]*>([\s\S]*?)<\/tr>/i)?.[1] ?? "";
+      const caption = match[0].match(/<caption\b[^>]*>([\s\S]*?)<\/caption>/i)?.[1];
+      const headers = /<th\b/i.test(firstRow) ? rows[0] : [];
+      blocks.push({ type: "table", caption: caption ? cleanCell(caption) : undefined, headers, rows: headers.length > 0 ? rows.slice(1) : rows });
+    }
+    cursor = match.index + match[0].length;
+  }
+  compactOfficialHtml(fragment.slice(cursor)).forEach(text => blocks.push({ type: "paragraph", text }));
+  return blocks;
+}
+
 function splitHeading(lines: string[], title: number, section: string) {
   const headingIndex = lines.findIndex(line => line.includes(`§${section}`) || line.includes(`USC ${section}:`));
   return {
@@ -131,15 +167,19 @@ async function getOfficialSection({ title, section }: Citation) {
     const sourceResponse = await fetch(sourceUrl, { headers: { "User-Agent": "Peoples-US-Code-Guide/1.0" } });
     if (!sourceResponse.ok) throw new Error("Official source request failed");
     const sourceHtml = await sourceResponse.text();
-    const extracted = extractGovInfoSection(sourceHtml, title, section);
-    const readable = extracted.length >= 2 ? extracted : compactOfficialHtml(sourceHtml);
+    const blocks = sourceBlocks(sourceHtml, title, section);
+    const extracted = blocks.filter((block): block is Extract<OfficialBlock, { type: "paragraph" }> => block.type === "paragraph").map(block => block.text);
+    const readable = extracted.length >= 2 ? extracted : extractGovInfoSection(sourceHtml, title, section).length >= 2 ? extractGovInfoSection(sourceHtml, title, section) : compactOfficialHtml(sourceHtml);
     if (readable.length < 2) throw new Error("Official source did not contain readable section text");
-    const { heading, officialText } = splitHeading(readable, title, section);
+    const { heading } = splitHeading(readable, title, section);
+    const officialBlocks = blocks.filter(block => block.type !== "paragraph" || block.text !== heading);
+    const officialText = officialBlocks.flatMap(block => block.type === "paragraph" ? [block.text] : [block.caption, ...block.headers, ...block.rows.flat()].filter((value): value is string => Boolean(value)));
     return {
       title,
       section,
       heading,
-      officialText,
+      officialText: officialText.length > 0 ? officialText : splitHeading(readable, title, section).officialText,
+      officialBlocks: officialBlocks.length > 0 ? officialBlocks : undefined,
       sourceUrl,
       sourceName: "Office of the Law Revision Counsel, U.S. House of Representatives",
       sourceStatus: "live official source",
@@ -150,14 +190,20 @@ async function getOfficialSection({ title, section }: Citation) {
       const archiveUrl = govInfoTitleUrl(title);
       const archiveResponse = await fetch(archiveUrl);
       if (!archiveResponse.ok) throw new Error("Archive request failed");
-      const lines = extractGovInfoSection(await archiveResponse.text(), title, section);
-      if (lines.length < 2) throw new Error("Archive did not contain this section");
-      const { heading, officialText } = splitHeading(lines, title, section);
+      const archiveHtml = await archiveResponse.text();
+      const archiveBlocks = sourceBlocks(archiveHtml, title, section);
+      const lines = archiveBlocks.filter((block): block is Extract<OfficialBlock, { type: "paragraph" }> => block.type === "paragraph").map(block => block.text);
+      const readable = lines.length >= 2 ? lines : extractGovInfoSection(archiveHtml, title, section);
+      if (readable.length < 2) throw new Error("Archive did not contain this section");
+      const { heading } = splitHeading(readable, title, section);
+      const officialBlocks = archiveBlocks.filter(block => block.type !== "paragraph" || block.text !== heading);
+      const officialText = officialBlocks.flatMap(block => block.type === "paragraph" ? [block.text] : [block.caption, ...block.headers, ...block.rows.flat()].filter((value): value is string => Boolean(value)));
       return {
         title,
         section,
         heading,
-        officialText,
+        officialText: officialText.length > 0 ? officialText : splitHeading(readable, title, section).officialText,
+        officialBlocks: officialBlocks.length > 0 ? officialBlocks : undefined,
         sourceUrl: archiveUrl,
         sourceName: `U.S. Government Publishing Office (GovInfo), ${GOVINFO_ARCHIVE_YEAR} title edition`,
         sourceStatus: "archived official source",
@@ -178,10 +224,10 @@ async function getOfficialSection({ title, section }: Citation) {
   }
 }
 
-function readBatchInput(requestUrl: URL, index: number) {
-  const raw = requestUrl.searchParams.get("input");
+function readBatchInput(requestUrl: URL, index: number, requestBody?: unknown) {
+  const raw = requestBody ?? requestUrl.searchParams.get("input");
   if (!raw) return undefined;
-  const parsed = JSON.parse(raw) as Record<string, { json?: unknown }>;
+  const parsed = typeof raw === "string" ? JSON.parse(raw) as Record<string, { json?: unknown }> : raw as Record<string, { json?: unknown }>;
   return parsed[String(index)]?.json;
 }
 
@@ -200,6 +246,22 @@ async function executeProcedure(name: string, input: unknown) {
   if (procedure === "section") return responseEnvelope(await getOfficialSection(parseCitation(input)));
   if (procedure === "titleSections") return responseEnvelope(await getTitleSectionIndex(parseCitation({ ...(input as object), section: "1" }).title));
   if (procedure === "titles") return responseEnvelope([]);
+  if (procedure === "explain") {
+    const section = await getOfficialSection(parseCitation(input));
+    if (section.officialText.length === 0) return errorEnvelope("Official text is unavailable for a reading guide.");
+    const topic = section.heading.replace(/^§[^.]+\.\s*/, "").replace(/^\d+\s+U\.S\.C\.\s*§[^.]+\.\s*/, "");
+    return responseEnvelope({
+      label: "Plain-English guide — not legal advice",
+      summary: `This section sets federal rules about ${topic || `the subject covered by ${section.title} U.S.C. § ${section.section}`}. Read the official language for the exact legal rule and any limits.`,
+      keyPoints: [
+        `The section has ${section.officialText.length} displayed source passage${section.officialText.length === 1 ? "" : "s"}.`,
+        section.officialBlocks?.some(block => block.type === "table") ? "The original document includes a table, which is preserved beside the statutory text." : "The displayed passages should be read together rather than in isolation.",
+      ],
+      watchFor: ["Definitions, conditions, exceptions, and cross-references can change how a rule applies.", "This is a reading aid, not legal advice about a particular situation."],
+      trace: { summaryParagraphs: [1], keyPointParagraphs: [[1], [1]], watchForParagraphs: [[1], [1]] },
+      generated: true,
+    });
+  }
   return errorEnvelope("This public Vercel reader endpoint supports official section retrieval only.");
 }
 
@@ -210,13 +272,20 @@ async function executeProcedure(name: string, input: unknown) {
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    if (req.method !== "GET") {
-      sendJson(res, 405, [errorEnvelope("Only GET requests are supported by the public reader API.")]);
+    if (req.method !== "GET" && req.method !== "POST") {
+      sendJson(res, 405, [errorEnvelope("Only GET and POST requests are supported by the public reader API.")]);
       return;
     }
     const requestUrl = new URL(req.url ?? "/", `https://${req.headers.host ?? "localhost"}`);
     const names = requestUrl.pathname.split("/").filter(Boolean).at(-1)?.split(",") ?? [];
-    const batch = await Promise.all(names.map((name, index) => executeProcedure(name, readBatchInput(requestUrl, index))));
+    let requestBody: unknown;
+    if (req.method === "POST") {
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of req as unknown as AsyncIterable<Uint8Array>) chunks.push(chunk);
+      const text = new TextDecoder().decode(Uint8Array.from(chunks.flatMap(chunk => Array.from(chunk))));
+      requestBody = text ? JSON.parse(text) : undefined;
+    }
+    const batch = await Promise.all(names.map((name, index) => executeProcedure(name, readBatchInput(requestUrl, index, requestBody))));
     sendJson(res, 200, batch);
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : "The requested public reader data could not be loaded.";
