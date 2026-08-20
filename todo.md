@@ -91,3 +91,6 @@
 - [x] Explicitly exclude standalone derivation and similar editorial headings in both parser paths, with dedicated managed and Vercel regression tests.
 - [ ] Re-check 5 U.S.C. § 552 on the deployed reader and refine any remaining source-like fallback wording before final delivery.
 - [x] Make practical translation rules recognize statutory paragraph labels such as “(a)(4)(A)” and add labeled-line regression coverage.
+- [ ] Translate remaining labeled subclauses in substantive sections rather than emitting source-like fragments such as “That have been released” or “Such agency regulations.”
+- [ ] Add real-section regression coverage for public-records subclauses and re-verify the deployed guide after the refinement.
+- [ ] Expand public-records coverage for indexed/public-notice subclauses and confirm the deployed guide contains no refined source fragments.

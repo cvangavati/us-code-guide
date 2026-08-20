@@ -187,17 +187,41 @@ function managedPracticalRuleExplanation(source: string) {
   if (/^Each agency.*make available for public inspection in an electronic format/i.test(ruleText)) {
     return "Agencies have to put the listed materials online so the public can inspect them.";
   }
+  if (/^That have been released to any person under paragraph \(3\)/i.test(ruleText)) {
+    return "The agency must post records it has already released in response to a request.";
+  }
+  if (/^that because of the nature of their subject matter/i.test(ruleText)) {
+    return "The agency must also post records likely to be requested again because people often seek similar information.";
+  }
+  if (/^That have been requested 3 or more times/i.test(ruleText)) {
+    return "A record requested at least three times must also be posted for everyone to see.";
+  }
   if (/^In making any record available to a person/i.test(ruleText)) {
     return "When possible, the agency has to give records in the format the requester asks for.";
   }
   if (/^In responding .* request for records/i.test(ruleText)) {
     return "The agency has to make a reasonable effort to search electronic records without seriously disrupting its work.";
   }
+  if (/^An agency, or part of an agency, that is an element of the intelligence community/i.test(ruleText)) {
+    return "Intelligence-community agencies have a special exception that can let them avoid confirming or releasing certain records.";
+  }
+  if (/^Any government entity, other than a State/i.test(ruleText)) {
+    return "This rule identifies which government bodies count as government requesters for this exception.";
+  }
+  if (/^A representative of a government entity/i.test(ruleText)) {
+    return "The same exception can cover a representative acting for one of those government bodies.";
+  }
+  if (/^Such agency regulations (?:shall|must) provide that/i.test(ruleText)) {
+    return "The agency's fee rules must include the limits described next.";
+  }
   if (/^No agency .* advance payment of any fee/i.test(ruleText)) {
     return "An agency generally cannot demand payment up front, except for unpaid past fees or a request expected to cost more than $250.";
   }
   if (/^Fees (?:shall|must) be limited .* commercial use/i.test(ruleText)) {
     return "For commercial requests, fees can cover reasonable costs for searching, copying, and reviewing records.";
+  }
+  if (/^Fees (?:shall|must) be limited .* educational or noncommercial scientific/i.test(ruleText)) {
+    return "Educational and nonprofit scientific requesters normally pay only reasonable copying costs.";
   }
   if (/^For any request not described .* fees (?:shall|must) be limited/i.test(ruleText)) {
     return "For other requests, fees can cover only reasonable search and copying costs.";
@@ -208,11 +232,26 @@ function managedPracticalRuleExplanation(source: string) {
   if (/^For any request described .* first two hours of search time/i.test(ruleText)) {
     return "Certain noncommercial requests do not have to pay for the first two hours of searching or the first 100 copied pages.";
   }
+  if (/^Documents (?:shall|must) be furnished without any charge .* public interest/i.test(ruleText)) {
+    return "Fees should be waived or reduced when releasing the information would meaningfully help the public understand government work.";
+  }
+  if (/^Fee schedules (?:shall|must) provide for the recovery/i.test(ruleText)) {
+    return "Fee rules can recover only the direct costs of searching, copying, or reviewing records.";
+  }
   if (/^Nothing in this subparagraph (?:shall|must) supersede/i.test(ruleText)) {
     return "Another law can set a different fee rule for particular kinds of records.";
   }
   if (/^In any action by a requester regarding the waiver of fees/i.test(ruleText)) {
     return "A court decides a fee-waiver dispute from the beginning, using the information the agency had at the time.";
+  }
+  if (/^Except as provided in subclause .* agency (?:shall|must) not assess/i.test(ruleText)) {
+    return "When an agency misses the legal response deadline, it normally cannot charge search or copying fees.";
+  }
+  if (/^If an agency has determined that unusual circumstances apply .*5,000 pages/i.test(ruleText)) {
+    return "An agency may still charge fees when a very large request needs more than 5,000 pages and it follows the required notice process.";
+  }
+  if (/^If an agency has determined that unusual circumstances apply/i.test(ruleText)) {
+    return "This line gives an agency a limited exception to the usual no-fee rule when unusual circumstances apply and it gives proper notice.";
   }
   if (/^If a court has determined that exceptional circumstances exist/i.test(ruleText)) {
     return "A court can excuse a missed deadline for the time stated in its order when unusual problems make that necessary.";

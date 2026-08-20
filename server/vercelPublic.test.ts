@@ -127,6 +127,32 @@ describe("Vercel public reader API", () => {
     expect(guide.keyPoints.join(" ")).not.toMatch(/except to the extent|shall be limited|determine the matter de novo/i);
   });
 
+  it("turns public-records subclauses into complete explanations instead of source fragments", () => {
+    const guide = sourceGroundedGuide({
+      heading: "Public records",
+      officialText: [
+        "(a)(2)(D)(i) That have been released to any person under paragraph (3); and",
+        "(a)(2)(D)(ii)(I) that because of the nature of their subject matter, the agency determines have become or are likely to become the subject of subsequent requests for substantially the same records; or",
+        "(a)(4)(A)(iii) Such agency regulations shall provide that fees shall be limited.",
+        "(a)(4)(A)(iv)(II) Documents shall be furnished without any charge or at a charge reduced below the fees established under clause (ii) if disclosure of the information is in the public interest.",
+        "(a)(2) It has been indexed and either made available or published as provided by this paragraph; or",
+        "(a)(2) The party has actual and timely notice of the terms of it.",
+        "(c)(1) An agency, or part of an agency, that is an element of the intelligence community may not make any record available under this paragraph.",
+      ],
+    });
+
+    expect(guide.keyPoints).toEqual([
+      "Line 1: The agency must post records it has already released in response to a request.",
+      "Line 2: The agency must also post records likely to be requested again because people often seek similar information.",
+      "Line 3: The agency's fee rules must include the limits described next.",
+      "Line 4: Fees should be waived or reduced when releasing the information would meaningfully help the public understand government work.",
+      "Line 5: A record can be relied on only after it has been indexed and made public.",
+      "Line 6: A person can be held to a record or decision when they received timely notice of it.",
+      "Line 7: Intelligence-community agencies have a special exception that can let them avoid confirming or releasing certain records.",
+    ]);
+    expect(guide.keyPoints.join(" ")).not.toMatch(/that have been released|such agency regulations|documents shall be furnished|it has been indexed and either made|the party has actual and timely notice/i);
+  });
+
   it("excludes a standalone derivation heading and explains a substantive public-records rule in practical language", async () => {
     const realFetch = globalThis.fetch;
     vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
