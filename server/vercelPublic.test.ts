@@ -62,5 +62,6 @@ describe("Vercel public reader API", () => {
     expect(guide.summary).toMatch(/also covers/i);
     expect(guide.keyPoints[0]).toMatch(/^Line 1:/);
     expect(guide.keyPoints.join(" ")).not.toMatch(/read that sentence|should|mandatory wording/i);
+    expect(guide.keyPoints.join(" ")).not.toMatch(/July|Stat\./i);
   }, 30_000);
 });

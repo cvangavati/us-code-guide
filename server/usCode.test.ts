@@ -22,7 +22,7 @@ describe("U.S. Code content model", () => {
       <html><head><script>ignore()</script><style>.hide { display:none; }</style></head>
       <body><div>Home</div><h1>18 USC 1030: Fraud and related activity</h1>
       <p>Whoever knowingly accesses a computer without authorization is subject to this section.</p>
-      <p>A second statutory paragraph remains available for the reader.</p></body></html>`;
+      <p>A second statutory paragraph remains available for the reader.</p><p>(July 30, 1947, ch. 388, 61 Stat. 633.)</p></body></html>`;
     expect(compactOfficialHtml(source)).toEqual([
       "18 USC 1030: Fraud and related activity",
       "Whoever knowingly accesses a computer without authorization is subject to this section.",

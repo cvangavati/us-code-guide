@@ -72,6 +72,10 @@ function decodeHtml(input: string) {
     .replace(/&#x([0-9a-f]+);/gi, (_, value) => String.fromCodePoint(parseInt(value, 16)));
 }
 
+function isSourceHistoryLine(line: string) {
+  return /^\(?\s*(?:[A-Z][a-z]+\.?\s+\d{1,2},\s+\d{4},\s+ch\.|Pub\.\s*L\.|Act\s+of\s+[A-Z][a-z]+\s+\d{1,2},\s+\d{4})/i.test(line);
+}
+
 export function compactOfficialHtml(html: string) {
   const cleaned = html
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
@@ -86,7 +90,8 @@ export function compactOfficialHtml(html: string) {
   const editorialNotes = rawLines.findIndex(line => /editorial notes/i.test(line));
   const lines = (editorialNotes >= 0 ? rawLines.slice(0, editorialNotes) : rawLines)
     .filter(line => line.length > 20)
-    .filter(line => !/^(home|search & browse|downloads|understanding the code)$/i.test(line));
+    .filter(line => !/^(home|search & browse|downloads|understanding the code)$/i.test(line))
+    .filter(line => !isSourceHistoryLine(line));
   return lines.slice(0, 45);
 }
 
