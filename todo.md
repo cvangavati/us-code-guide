@@ -27,3 +27,10 @@
 - [x] Add representative section-preview chips to all relevant title entries before a reader opens the title.
 - [x] Re-run desktop and mobile verification on the final navigation state and save an updated checkpoint.
 - [x] Show per-title representative-section preview chips before a reader selects a title and test the unselected-title previews.
+- [x] Build a plain-language keyword search that finds relevant Code titles and section-level reading entries without requiring a citation.
+- [x] Clearly label the search scope and source status for each result so users know when a result is a curated guide or an official section index.
+- [x] Add a local, persistent saved reading list with bookmark, remove, and revisit controls that does not require an account.
+- [x] Add a visual related-laws trail with clearly labeled, curated connections among commonly associated sections.
+- [ ] Add and run automated tests and desktop/mobile verification for search, saved lists, and related-law navigation, then save a checkpoint.
+- [x] Add explicit official-section-index search entries and per-card source-scope labels alongside curated guide entries.
+- [x] Add an official GovInfo full-Code search link for queries outside the built-in plain-language guide index.

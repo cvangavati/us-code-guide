@@ -1,8 +1,9 @@
 import { trpc } from "@/lib/trpc";
 import { parseUSCodeCitation, readerPath, selectSectionForReader, selectTitleForReader, setReaderMode } from "@shared/citation";
 import { CODE_TOPICS, titleDescription, titleSectionPreviews } from "@shared/navigation";
+import { isSavedSection, officialGovInfoSearchUrl, readSavedSections, relatedLawsFor, searchPlainLanguage, toggleSavedSection, writeSavedSections } from "@shared/readerFeatures";
 import { US_CODE_TITLES, type CodeSection, type PlainEnglishGuide } from "@shared/usCode";
-import { ArrowUpRight, BookOpenText, ChevronRight, ExternalLink, FileText, Info, LoaderCircle, Menu, Search, ShieldCheck, Sparkles, X } from "lucide-react";
+import { ArrowUpRight, Bookmark, BookmarkCheck, BookOpenText, ChevronRight, ExternalLink, FileText, GitFork, Info, LoaderCircle, Menu, Search, ShieldCheck, Sparkles, X } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 
@@ -138,6 +139,9 @@ export default function Home() {
   const [fontSize, setFontSize] = useState(1);
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
+  const [plainSearch, setPlainSearch] = useState("");
+  const [showReadingList, setShowReadingList] = useState(false);
+  const [savedSections, setSavedSections] = useState(() => readSavedSections());
   const input = useMemo(() => ({ title: citation.title, section: citation.section }), [citation.title, citation.section]);
   const sectionQuery = trpc.usCode.section.useQuery(input, { staleTime: 10 * 60_000, retry: 1 });
   const titleSections = trpc.usCode.titleSections.useQuery({ title: citation.title }, { staleTime: 10 * 60_000, retry: 1, enabled: !sectionQuery.isFetching });
@@ -148,6 +152,7 @@ export default function Home() {
   const topicTitleNumbers = activeTopic ? CODE_TOPICS.find(topic => topic.id === activeTopic)?.titles ?? [] : [];
   const visibleTitles = activeTopic ? availableTitles.filter(title => topicTitleNumbers.includes(title.number)) : availableTitles;
   const activeTopicData = CODE_TOPICS.find(topic => topic.id === activeTopic);
+  const searchResults = useMemo(() => searchPlainLanguage(plainSearch), [plainSearch]);
   const sectionGroups = useMemo(() => {
     const groups = new Map<string, NonNullable<typeof titleSections.data>>();
     titleSections.data?.forEach(item => {
@@ -157,6 +162,8 @@ export default function Home() {
     return Array.from(groups.entries());
   }, [titleSections.data]);
   const activeSectionCount = titleSections.data?.length ?? 0;
+  const relatedLaws = liveSection ? relatedLawsFor(liveSection.title, liveSection.section) : [];
+  const currentSectionIsSaved = liveSection ? isSavedSection(savedSections, liveSection.title, liveSection.section) : false;
 
   const moveToCitation = (next: { title: number; section: string }) => {
     if (next.title < 1 || next.title > 54) return;
@@ -177,6 +184,28 @@ export default function Home() {
     moveToCitation(parsed);
   };
 
+  const openSearchResult = (result: { title: number; section: string }) => {
+    setPlainSearch("");
+    moveToCitation({ title: result.title, section: result.section });
+  };
+
+  const toggleCurrentSection = () => {
+    if (!liveSection) return;
+    setSavedSections(current => {
+      const next = toggleSavedSection(current, { title: liveSection.title, section: liveSection.section, heading: liveSection.heading });
+      writeSavedSections(next);
+      return next;
+    });
+  };
+
+  const removeSavedSection = (title: number, section: string) => {
+    setSavedSections(current => {
+      const next = current.filter(item => !(item.title === title && item.section === section));
+      writeSavedSections(next);
+      return next;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-[#f5f0df] text-[#201f1b]">
       <header className="border-b border-white/10 bg-[#0b1010] text-[#f4f0e5]">
@@ -185,10 +214,10 @@ export default function Home() {
             <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#9ab69b]/60 text-[#c8e1c7]"><BookOpenText className="h-4 w-4" /></span>
             <span><span className="law-serif block text-lg leading-none tracking-tight">The People’s Code</span><span className="law-mono mt-1 block text-[9px] uppercase tracking-[0.15em] text-[#9ba8a2]">United States Code, made legible</span></span>
           </a>
-          <div className="hidden items-center gap-7 text-xs text-[#b9c4bd] md:flex"><a href="#reader" className="transition-colors hover:text-white">Start reading</a><a href="#how-it-works" className="transition-colors hover:text-white">How it works</a><span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#b9dfb5]" />Official-source first</span></div>
+          <div className="hidden items-center gap-5 text-xs text-[#b9c4bd] md:flex"><a href="#plain-search" className="transition-colors hover:text-white">Search the Code</a><button onClick={() => setShowReadingList(open => !open)} className="inline-flex items-center gap-1.5 transition-colors hover:text-white"><Bookmark className="h-3.5 w-3.5" />Reading list{savedSections.length > 0 ? ` (${savedSections.length})` : ""}</button><a href="#how-it-works" className="transition-colors hover:text-white">How it works</a><span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#b9dfb5]" />Official-source first</span></div>
           <button className="rounded-full border border-white/15 p-2 text-[#e9eee8] md:hidden" onClick={() => setMobileOpen(open => !open)} aria-label="Toggle navigation">{mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}</button>
         </div>
-        {mobileOpen && <div className="border-t border-white/10 px-5 py-4 text-sm text-[#cfd6d0] md:hidden"><a onClick={() => setMobileOpen(false)} href="#reader" className="block py-2">Start reading</a><a onClick={() => setMobileOpen(false)} href="#how-it-works" className="block py-2">How it works</a></div>}
+        {mobileOpen && <div className="border-t border-white/10 px-5 py-4 text-sm text-[#cfd6d0] md:hidden"><a onClick={() => setMobileOpen(false)} href="#plain-search" className="block py-2">Search the Code</a><button onClick={() => { setShowReadingList(open => !open); setMobileOpen(false); }} className="block py-2">Reading list{savedSections.length > 0 ? ` (${savedSections.length})` : ""}</button><a onClick={() => setMobileOpen(false)} href="#how-it-works" className="block py-2">How it works</a></div>}
       </header>
 
       <main>
@@ -208,6 +237,11 @@ export default function Home() {
             <div><p className="law-mono text-[10px] uppercase tracking-[0.15em] text-[#697269]">Open the reader</p><h2 className="law-serif mt-1 text-3xl tracking-[-0.03em] sm:text-4xl">Find a section. Read both versions.</h2></div>
             <div className="flex items-center gap-2 text-xs text-[#596158]"><ShieldCheck className="h-4 w-4 text-[#38664a]" />No giant document downloads</div>
           </div>
+
+          <section id="plain-search" aria-label="Search the Code in plain language" className="mb-5 overflow-hidden rounded-xl border border-[#d8d0bc] bg-[#fcf9f0] shadow-[0_10px_30px_rgba(55,46,28,.07)]">
+            <div className="grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_290px] sm:p-5"><div><p className="law-mono text-[10px] uppercase tracking-[0.14em] text-[#5f705f]">Plain-language search</p><h3 className="law-serif mt-1 text-2xl tracking-[-0.02em]">Describe what you are looking for.</h3><p className="mt-1 text-sm leading-6 text-[#625b50]">Try “minimum wage,” “public records,” “fair use,” or “voting rights.”</p></div><div className="self-center"><label htmlFor="plain-search-input" className="sr-only">Search the Code in plain language</label><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#777064]" /><input id="plain-search-input" value={plainSearch} onChange={event => setPlainSearch(event.target.value)} placeholder="Search in everyday words" className="h-11 w-full rounded-lg border border-[#cfc4ad] bg-white pl-10 pr-9 text-sm outline-none transition focus:border-[#3b704c] focus:ring-2 focus:ring-[#b8d7bc]" />{plainSearch && <button aria-label="Clear plain-language search" onClick={() => setPlainSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[#766f62] hover:bg-[#eee8d9]"><X className="h-4 w-4" /></button>}</div></div></div>
+            {plainSearch && <div className="border-t border-[#ded5c1] bg-[#f6f1e4] p-3 sm:p-4"><div className="mb-2 flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-[#645d51]">{searchResults.length > 0 ? `Showing guide matches for “${plainSearch}”` : `No indexed guide match for “${plainSearch}” yet.`}</p><span className="law-mono text-[9px] uppercase tracking-[0.09em] text-[#738071]">Each card identifies its source scope</span></div>{searchResults.length > 0 ? <div className="grid gap-2 sm:grid-cols-2">{searchResults.map(result => <button onClick={() => openSearchResult(result)} key={result.id} className="group rounded-lg border border-[#d8ceba] bg-white p-3 text-left transition hover:border-[#638a6c] hover:bg-[#eef5ec]"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium text-[#2c332d]">{result.label}</p><p className="mt-1 text-xs leading-5 text-[#665f55]">{result.description}</p></div><ChevronRight className="mt-1 h-4 w-4 shrink-0 text-[#608069] opacity-0 transition group-hover:opacity-100" /></div><p className="law-mono mt-2 text-[9px] uppercase tracking-[0.08em] text-[#637263]">{result.scope} · {result.sourceStatus} · {result.title} USC § {result.section}</p></button>)}</div> : <p className="rounded-lg border border-dashed border-[#cbc0a9] bg-[#faf7ef] p-3 text-sm leading-6 text-[#6c6457]">Try a more everyday phrase, or browse a topic below.</p>}<a href={officialGovInfoSearchUrl(plainSearch)} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-medium text-[#275839] underline decoration-[#8fb197] underline-offset-4 hover:text-[#173e26]">Search “{plainSearch}” across the official U.S. Code at GovInfo <ExternalLink className="h-3.5 w-3.5" /></a></div>}
+          </section>
 
           <section aria-label="Browse by everyday topic" className="mb-5 overflow-hidden rounded-xl border border-[#d8d0bc] bg-[#eee8d9]">
             <div className="flex flex-col justify-between gap-3 border-b border-[#d8d0bc] px-4 py-4 sm:flex-row sm:items-center sm:px-5"><div><p className="law-mono text-[10px] uppercase tracking-[0.14em] text-[#637063]">Start with a subject, not a citation</p><p className="mt-1 text-sm text-[#4e4b43]">Choose the part of everyday life you are trying to understand.</p></div><button onClick={() => setActiveTopic(null)} className={`rounded-full border px-3 py-1.5 text-xs transition ${activeTopic ? "border-[#bfb49d] bg-[#f9f5ea] text-[#5f594e] hover:border-[#5f8968]" : "border-[#3e744c] bg-[#dcebd9] text-[#255033]"}`}>{activeTopic ? "Show all 54 titles" : "Showing all titles"}</button></div>
@@ -229,16 +263,18 @@ export default function Home() {
 
                 <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-[#d8d0bc] bg-[#faf7ef] px-5 py-4 sm:px-7">
                   <div><nav aria-label="Reader location" className="law-mono flex items-center gap-1 text-[10px] uppercase tracking-[0.1em] text-[#6d675c]"><a href="#browse-titles" className="underline-offset-2 hover:underline">Browse</a><ChevronRight className="h-3 w-3" /><span>Title {citation.title}</span><ChevronRight className="h-3 w-3" /><span>Section {citation.section}</span></nav><h3 className="law-serif mt-2 text-2xl leading-7 tracking-[-0.025em] text-[#27251f]">{liveSection?.heading ?? "Opening the official section…"}</h3></div>
-                  {liveSection && <a href={liveSection.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-[#cbc1ad] px-3 py-2 text-xs text-[#47453e] transition hover:border-[#447252] hover:bg-[#edf4eb] hover:text-[#205133]">View official source <ExternalLink className="h-3.5 w-3.5" /></a>}
+                  {liveSection && <div className="flex flex-wrap items-center gap-2"><button aria-pressed={currentSectionIsSaved} onClick={toggleCurrentSection} className="inline-flex items-center gap-2 rounded-full border border-[#a9c4ac] bg-[#eef6ec] px-3 py-2 text-xs font-medium text-[#285637] transition hover:border-[#537f5c] hover:bg-[#dcebd9]">{currentSectionIsSaved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}{currentSectionIsSaved ? "Saved" : "Save"}</button><a href={liveSection.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-[#cbc1ad] px-3 py-2 text-xs text-[#47453e] transition hover:border-[#447252] hover:bg-[#edf4eb] hover:text-[#205133]">View official source <ExternalLink className="h-3.5 w-3.5" /></a></div>}
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#d8d0bc] bg-white px-5 py-3 sm:px-7"><p className="text-xs text-[#696257]">{sectionQuery.isFetching ? <span className="inline-flex items-center gap-2"><LoaderCircle className="h-3.5 w-3.5 animate-spin" />Updating from source</span> : liveSection ? <span>{liveSection.sourceStatus === "live official source" ? "Retrieved from the current official source" : liveSection.sourceStatus === "archived official source" ? "Official GovInfo archive edition" : "Official source link available"} · {formatUpdated(liveSection.retrievedAt)}</span> : "Finding the official section…"}</p><div className="flex flex-wrap items-center gap-2"><div className="flex overflow-hidden rounded-full border border-[#cfc5af] p-0.5" role="group" aria-label="Text size"><button aria-pressed={fontSize === 0.9} onClick={() => setFontSize(0.9)} className={`rounded-full px-2 py-1 text-[10px] ${fontSize === 0.9 ? "bg-[#e6dfce] text-[#27251f]" : "text-[#676055]"}`}>A−</button><button aria-pressed={fontSize === 1} onClick={() => setFontSize(1)} className={`rounded-full px-2 py-1 text-[10px] ${fontSize === 1 ? "bg-[#e6dfce] text-[#27251f]" : "text-[#676055]"}`}>A</button><button aria-pressed={fontSize === 1.14} onClick={() => setFontSize(1.14)} className={`rounded-full px-2 py-1 text-[10px] ${fontSize === 1.14 ? "bg-[#e6dfce] text-[#27251f]" : "text-[#676055]"}`}>A+</button></div><button aria-pressed={density === "compact"} onClick={() => setDensity(current => current === "comfortable" ? "compact" : "comfortable")} className="rounded-full border border-[#cfc5af] px-3 py-1.5 text-[10px] text-[#554f45] transition hover:bg-[#f3eee2]">{density === "compact" ? "Comfortable spacing" : "Compact spacing"}</button><button disabled={!liveSection || liveSection.officialText.length === 0 || explain.isPending} onClick={() => liveSection && explain.mutate({ title: liveSection.title, section: liveSection.section })} className="inline-flex items-center gap-2 rounded-full border border-[#a8c7ab] bg-[#edf5eb] px-3 py-1.5 text-xs font-medium text-[#245232] transition hover:bg-[#dcebd9] disabled:cursor-not-allowed disabled:opacity-50"><Sparkles className="h-3.5 w-3.5" />{explain.isPending ? "Making guide…" : guide ? "Refresh plain-English guide" : "Make a plain-English guide"}</button></div></div>
 
                 <div className="lg:hidden"><div className="flex bg-[#f7f2e6] p-2" role="group" aria-label="Mobile reading view"><button aria-pressed={mobileView === "official"} onClick={() => setMobileView(setReaderMode("official"))} className={`flex-1 rounded-md px-3 py-2 text-xs font-medium ${mobileView === "official" ? "bg-[#f9f5e8] text-[#2d2a23] shadow-sm" : "text-[#6d665c]"}`}>Official text</button><button aria-pressed={mobileView === "guide"} onClick={() => setMobileView(setReaderMode("guide"))} className={`flex-1 rounded-md px-3 py-2 text-xs font-medium ${mobileView === "guide" ? "bg-[#e8f0e8] text-[#285438] shadow-sm" : "text-[#6d665c]"}`}>Plain English</button></div></div>
                 {sectionQuery.isLoading && citation.title !== 1 ? <div className="flex min-h-[420px] items-center justify-center bg-[#faf7ef] text-sm text-[#746b5e]"><LoaderCircle className="mr-2 h-4 w-4 animate-spin" />Opening one section, not the whole Code…</div> : liveSection ? <><div className="hidden lg:block"><ReadingPanel section={liveSection} guide={guide} view="both" fontSize={fontSize} density={density} /></div><div className="lg:hidden"><ReadingPanel section={liveSection} guide={guide} view={mobileView} fontSize={fontSize} density={density} /></div></> : <div className="min-h-[420px] bg-[#faf7ef] p-8 text-sm text-[#746b5e]">The official section is not available at the moment. Try another citation or visit the source site directly.</div>}
+                {liveSection && <section aria-label="Related laws" className="border-t border-[#d8d0bc] bg-[#e7eee5] px-5 py-5 sm:px-7"><div className="flex items-start justify-between gap-4"><div><p className="law-mono text-[10px] uppercase tracking-[0.14em] text-[#4b7054]">Curated related-law trail</p><h3 className="law-serif mt-1 text-2xl text-[#1f4229]">Where this reading can lead next</h3></div><GitFork className="mt-1 h-5 w-5 text-[#4c7454]" aria-hidden="true" /></div>{relatedLaws.length > 0 ? <div className="mt-4 grid gap-2 md:grid-cols-2">{relatedLaws.map((related, index) => <button onClick={() => moveToCitation({ title: related.title, section: related.section })} key={`${related.title}-${related.section}`} className="group relative overflow-hidden rounded-xl border border-[#bfd1c0] bg-[#f4f8f2] p-4 text-left transition hover:border-[#648e6c] hover:bg-white"><div className="absolute left-4 top-0 h-3 border-l border-dashed border-[#719c79]" /><div className="flex items-start gap-3"><span className="law-mono mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#dcebd9] text-[10px] text-[#2d643b]">{index + 1}</span><span><span className="block text-sm font-medium text-[#264b2f]">{related.label}</span><span className="mt-1 block text-xs leading-5 text-[#59675b]">{related.connection}</span><span className="law-mono mt-2 block text-[9px] uppercase tracking-[0.09em] text-[#52735a]">{related.title} USC § {related.section} <span className="ml-1">→ open</span></span></span></div></button>)}</div> : <p className="mt-3 rounded-lg border border-dashed border-[#b7cbb9] bg-[#f4f8f2] p-3 text-sm leading-6 text-[#536255]">No curated trail has been added for this section yet. Use the title’s chapter map above to continue exploring without leaving the reader.</p>}<p className="mt-3 text-[11px] leading-5 text-[#627363]">These are curated reading connections, not legal conclusions. Check the official language and context before relying on a connection.</p></section>}
               </div>
             </div>
           </div>
+          {showReadingList && <section aria-label="Your saved reading list" className="mt-5 overflow-hidden rounded-xl border border-[#d0c6b0] bg-[#fbf8ef]"><div className="flex items-center justify-between gap-3 border-b border-[#ded5c1] px-4 py-4 sm:px-5"><div><p className="law-mono text-[10px] uppercase tracking-[0.14em] text-[#667365]">Your reading list</p><p className="mt-1 text-sm text-[#575248]">Saved only in this browser. No account required.</p></div><button onClick={() => setShowReadingList(false)} aria-label="Close reading list" className="rounded-full border border-[#cfc5af] p-2 text-[#625d53] hover:bg-[#eee8d9]"><X className="h-4 w-4" /></button></div>{savedSections.length > 0 ? <div className="grid gap-2 p-3 sm:grid-cols-2 sm:p-4">{savedSections.map(item => <div key={`${item.title}-${item.section}`} className="flex items-center justify-between gap-3 rounded-lg border border-[#ddd3bf] bg-white p-3"><button onClick={() => moveToCitation(item)} className="min-w-0 text-left"><p className="truncate text-sm font-medium text-[#2d332e]">{item.heading}</p><p className="law-mono mt-1 text-[9px] uppercase tracking-[0.08em] text-[#647163]">{item.title} USC § {item.section}</p></button><button onClick={() => removeSavedSection(item.title, item.section)} aria-label={`Remove ${item.title} USC section ${item.section} from reading list`} className="shrink-0 rounded-md p-2 text-[#766d60] hover:bg-[#f4e8e2] hover:text-[#9a3e32]"><X className="h-4 w-4" /></button></div>)}</div> : <p className="p-5 text-sm leading-6 text-[#645d52]">Save a section from the reader to keep it here. Your list stays on this device.</p>}</section>}
           <div className="mt-5 rounded-xl border border-[#d8d0bc] bg-[#eee8d9] p-4 sm:p-5">
             <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline"><p className="law-mono text-[10px] uppercase tracking-[0.14em] text-[#637063]">Not sure where to begin?</p><p className="text-xs text-[#6e675c]">Choose a familiar doorway into the Code.</p></div>
             <div className="mt-3 flex flex-wrap gap-2">{commonStartingPoints.map(item => <button onClick={() => moveToCitation({ title: item.title, section: item.section })} key={item.citation} className="group rounded-lg border border-[#cfc5ae] bg-[#faf7ef] px-3 py-2 text-left transition hover:border-[#60906b] hover:bg-[#edf4eb] active:scale-[.98]"><span className="block text-xs font-medium text-[#33342e]">{item.label}</span><span className="law-mono mt-1 block text-[9px] tracking-[0.08em] text-[#777064]">{item.citation}</span></button>)}</div>

@@ -23,3 +23,13 @@ The supplied reference site, <https://www.pleurat.com/>, presents an intentional
 ## Content-design guardrails
 
 The official text and the plain-English material must be visibly distinct. Plain-English explanations will be labeled as an explanatory guide rather than law, preserve statutory qualifiers where possible, avoid legal advice, and link directly to the corresponding official language.
+
+## Search and relationship feature sources
+
+GovInfo supports U.S. Code-only keyword search through `collection:uscode`, as well as search fields for titles, chapters, sections, headings, and short titles. Its developer documentation describes a search service and API that require an api.data.gov key. The live product should therefore separate its immediate built-in search catalogue from any future official full-text API integration, and label result scope clearly rather than implying that a limited local index searches every word of the Code.
+
+For the no-key, browser-efficient initial release, search can rank the locally maintained plain-language title descriptions, topic pathways, representative section entries, and curated related-law relationships. Each result must state whether it is a **guide index** result or an **official source index** result, then open the existing on-demand section reader. A later full-text implementation can use the documented official search service or a normalized release-point index.
+
+The OLRC download page confirms it publishes each current release point in XML and XHTML for all titles and for individual titles. That makes a scheduled, server-side ingestion/index pipeline technically appropriate for a future full Code search without ever transferring the whole archive to a visitor’s browser.
+
+Sources: <https://www.govinfo.gov/help/uscode>, <https://www.govinfo.gov/developers>, and <https://uscode.house.gov/download/download.shtml>

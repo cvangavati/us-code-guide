@@ -40,6 +40,7 @@ describe("reader interactions", () => {
 
   beforeEach(() => {
     window.history.pushState({}, "", "/read/1/1");
+    window.localStorage.clear();
   });
 
   it("updates the reader route after a title selection", async () => {
@@ -79,5 +80,38 @@ describe("reader interactions", () => {
     expect(guide.getAttribute("aria-pressed")).toBe("true");
     expect(official.getAttribute("aria-pressed")).toBe("false");
     expect(window.location.pathname).toBe("/read/1/1");
+  });
+
+  it("opens a plain-language search result at its specific Code section", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+    await user.type(screen.getByRole("textbox", { name: "Search the Code in plain language" }), "minimum wage");
+    const guideResult = screen.getAllByRole("button", { name: /minimum wage/i }).find(button => button.textContent?.startsWith("Minimum wage"));
+    if (!guideResult) throw new Error("Expected the curated minimum-wage search result");
+    await user.click(guideResult);
+    await waitFor(() => expect(window.location.pathname).toBe("/read/29/206"));
+  });
+
+  it("labels the search result card with both its scope and source status", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+    await user.type(screen.getByRole("textbox", { name: "Search the Code in plain language" }), "minimum wage");
+    expect(screen.getAllByText(/Plain-language guide index · Curated reading guide/i).length).toBeGreaterThan(0);
+  });
+
+  it("saves the current section locally and lets the reader reopen the list", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByRole("button", { name: "Saved" }).getAttribute("aria-pressed")).toBe("true");
+    await user.click(screen.getByRole("button", { name: "Reading list (1)" }));
+    expect(screen.getByText("Saved only in this browser. No account required.")).toBeTruthy();
+  });
+
+  it("follows a curated related-law path", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+    await user.click(screen.getByRole("button", { name: /county and parish/i }));
+    await waitFor(() => expect(window.location.pathname).toBe("/read/1/3"));
   });
 });
