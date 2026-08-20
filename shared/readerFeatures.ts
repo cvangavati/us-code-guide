@@ -29,6 +29,13 @@ export type SavedSection = {
   folderId?: string;
 };
 
+export type RecentSection = {
+  title: number;
+  section: string;
+  heading: string;
+  viewedAt: number;
+};
+
 export type SavedFolder = {
   id: string;
   name: string;
@@ -180,6 +187,7 @@ export function chapterTrailFor(title: number, currentSection: string, entries: 
 }
 
 const READING_LIST_KEY = "peoples-code-reading-list-v1";
+const RECENT_HISTORY_KEY = "peoples-code-recent-history-v1";
 export const DEFAULT_FOLDER_ID = "saved";
 
 const defaultFolder = (): SavedFolder => ({ id: DEFAULT_FOLDER_ID, name: "Saved sections", createdAt: 0, isDefault: true });
@@ -213,6 +221,24 @@ export function readSavedLibrary(): SavedLibrary {
 
 export function writeSavedLibrary(library: SavedLibrary) {
   if (typeof window !== "undefined") window.localStorage.setItem(READING_LIST_KEY, JSON.stringify(library));
+}
+
+export function readRecentSections(): RecentSection[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const value = JSON.parse(window.localStorage.getItem(RECENT_HISTORY_KEY) ?? "[]") as RecentSection[];
+    return Array.isArray(value) ? value.filter(item => typeof item?.title === "number" && typeof item?.section === "string" && typeof item?.heading === "string" && typeof item?.viewedAt === "number") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeRecentSections(items: RecentSection[]) {
+  if (typeof window !== "undefined") window.localStorage.setItem(RECENT_HISTORY_KEY, JSON.stringify(items));
+}
+
+export function addRecentSection(items: RecentSection[], item: Omit<RecentSection, "viewedAt">, now = Date.now()): RecentSection[] {
+  return [{ ...item, viewedAt: now }, ...items.filter(saved => !(saved.title === item.title && saved.section === item.section))].slice(0, 12);
 }
 
 export function createSavedFolder(library: SavedLibrary, name: string): SavedLibrary {

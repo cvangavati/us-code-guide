@@ -41,3 +41,11 @@
 - [x] Add and run automated tests and desktop/mobile verification for chapter trails and saved-folder management, then save a checkpoint.
 - [x] Add a filtered-folder interaction test that opens a saved section and verifies the reader route updates.
 - [x] Add a saved-folder filter so readers can focus the reading list on one folder at a time, with tested open, move, and remove flows in the filtered view.
+- [x] Add a private, browser-local recently viewed history with reopen and clear controls.
+- [x] Add a persistent, keyboard-accessible dark-mode toggle optimized for long statutory reading.
+- [x] Update README.md with architecture, feature behavior, source caveats, local development, testing, and GitHub synchronization guidance.
+- [x] Add and run automated tests plus desktop/mobile verification for history and dark-mode flows.
+- [ ] Save a verified checkpoint that synchronizes the completed update to the connected GitHub repository.
+- [x] Add a rendered reader test for the visible dark-mode control and verify persistent dark-theme state.
+- [x] Capture desktop and mobile verification with dark mode active and the recent-history panel open.
+- [x] Capture a desktop dark-mode verification with the recent-history panel open.

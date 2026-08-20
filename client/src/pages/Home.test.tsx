@@ -35,6 +35,10 @@ vi.mock("@/lib/trpc", () => ({
   },
 }));
 
+vi.mock("@/contexts/ThemeContext", () => ({
+  useTheme: () => ({ theme: "light", toggleTheme: vi.fn(), switchable: true }),
+}));
+
 describe("reader interactions", () => {
   afterEach(() => cleanup());
 
@@ -148,5 +152,14 @@ describe("reader interactions", () => {
     await user.type(rename, "Primary research");
     await user.click(screen.getByRole("button", { name: "Save name" }));
     expect(screen.getByText("Primary research")).toBeTruthy();
+  });
+
+  it("records the current reader section in a private recent-history panel and clears it", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+    await user.click(screen.getByRole("button", { name: "Recent (1)" }));
+    expect(screen.getAllByText("Words denoting number, gender, and so forth").length).toBeGreaterThan(1);
+    await user.click(screen.getByRole("button", { name: "Clear history" }));
+    expect(screen.getByText("Sections you open will appear here, up to the 12 most recent.")).toBeTruthy();
   });
 });

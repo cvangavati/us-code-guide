@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chapterTrailFor, createSavedFolder, deleteSavedFolder, moveSavedSection, officialGovInfoSearchUrl, relatedLawsFor, renameSavedFolder, searchPlainLanguage, toggleSavedSection, type SavedLibrary } from "./readerFeatures";
+import { addRecentSection, chapterTrailFor, createSavedFolder, deleteSavedFolder, moveSavedSection, officialGovInfoSearchUrl, relatedLawsFor, renameSavedFolder, searchPlainLanguage, toggleSavedSection, type SavedLibrary } from "./readerFeatures";
 
 describe("reader feature models", () => {
   it("finds a plain-language section match without requiring a citation", () => {
@@ -61,5 +61,13 @@ describe("reader feature models", () => {
     const deleted = deleteSavedFolder(moved, folder!.id);
     expect(deleted.sections[0].folderId).toBe("saved");
     expect(deleted.folders.some(item => item.id === folder!.id)).toBe(false);
+  });
+
+  it("keeps a bounded, duplicate-free recent-reading history with newest first", () => {
+    const initial = addRecentSection([], { title: 5, section: "552", heading: "Government records" }, 1);
+    const updated = addRecentSection(initial, { title: 17, section: "106", heading: "Exclusive rights" }, 2);
+    const revisited = addRecentSection(updated, { title: 5, section: "552", heading: "Government records" }, 3);
+    expect(revisited).toHaveLength(2);
+    expect(revisited[0]).toMatchObject({ title: 5, section: "552", viewedAt: 3 });
   });
 });

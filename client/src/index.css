@@ -68,4 +68,42 @@
   .paper-grain { background-image: radial-gradient(oklch(0.55 0.02 80 / 0.1) 0.55px, transparent 0.55px); background-size: 7px 7px; }
   .reader-scrollbar::-webkit-scrollbar { width: 7px; }
   .reader-scrollbar::-webkit-scrollbar-thumb { background: oklch(0.65 0.025 80); border-radius: 99px; }
+
+  .dark .dark-reader {
+    background-color: #101716 !important;
+    color: #e6eee8 !important;
+    color-scheme: dark;
+  }
+
+  .dark .dark-reader :is(h1, h2, h3, h4, p, li, label, button, a, span) {
+    color: #deebe2 !important;
+  }
+
+  .dark .dark-reader :is(
+    [class*="bg-[#f5f0df]"], [class*="bg-[#fcf9f0]"], [class*="bg-[#f7f2e6]"], [class*="bg-[#faf7ef]"],
+    [class*="bg-[#f9f5e8]"], [class*="bg-[#eee8d9]"], [class*="bg-[#f1ebdc]"], [class*="bg-[#e7e0ce]"],
+    [class*="bg-[#f4efdf]"], [class*="bg-[#f6f1e4]"], [class*="bg-[#fbf8ef]"], [class*="bg-[#f5f0e5]"],
+    [class*="bg-[#f9f5eb]"], [class*="bg-[#edf4eb]"], [class*="bg-[#e7eee5]"], [class*="bg-[#f4f8f2]"],
+    [class*="bg-[#e8f0e8]"], [class*="bg-[#f1f6ef]"], [class*="bg-[#f1f6f8]"], [class*="bg-white"]
+  ) {
+    background-color: #17211f !important;
+  }
+
+  .dark .dark-reader :is(
+    [class*="text-[#201f1b]"], [class*="text-[#27251f]"], [class*="text-[#37332c]"], [class*="text-[#2d2a23]"],
+    [class*="text-[#21492e]"], [class*="text-[#163b26]"], [class*="text-[#294653]"], [class*="text-[#304333]"],
+    [class*="text-[#2d332e]"], [class*="text-[#47453e]"], [class*="text-[#5d594f]"], [class*="text-[#5f594e]"],
+    [class*="text-[#696257]"], [class*="text-[#645d51]"], [class*="text-[#665f55]"], [class*="text-[#52616a]"],
+    [class*="text-[#5b6a5c]"], [class*="text-[#5a554a]"], [class*="text-[#70695f]"]
+  ) { color: #e2ece4 !important; }
+
+  .dark .dark-reader :is(input, select) {
+    background-color: #101817 !important;
+    color: #e9f0ea !important;
+    border-color: #4d6357 !important;
+  }
+
+  .dark .dark-reader :is(input, select)::placeholder { color: #9bac9f; }
+  .dark .dark-reader [class*="border-[#"] { border-color: #41554c !important; }
+  .dark .dark-reader .reader-scrollbar::-webkit-scrollbar-thumb { background: #537564; }
 }
