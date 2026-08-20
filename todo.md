@@ -68,3 +68,5 @@
 - [x] Preserve source tables as accessible tables in the official-text reader instead of flattening them into prose.
 - [x] Restore the Plain-English guide action on the Vercel deployment without placing provider credentials in the client bundle.
 - [x] Add regression coverage for source-table rendering and Vercel guide-generation responses, then verify the public build.
+- [x] Make the Vercel guide explain actual defined terms, operative verbs, conditions, and source-table structure from the displayed statute.
+- [ ] Add source-specific guide tests and verify the improved guide through the live Vercel mutation.

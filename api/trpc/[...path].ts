@@ -241,6 +241,67 @@ function parseCitation(value: unknown): Citation {
   return { title, section };
 }
 
+function sourceSentences(paragraphs: string[]) {
+  return paragraphs.flatMap(paragraph => paragraph.match(/[^.!?]+(?:[.!?]+|$)/g)?.map(sentence => sentence.replace(/\s+/g, " ").trim()).filter(Boolean) ?? []);
+}
+
+function shortenSource(sentence: string, limit = 220) {
+  return sentence.length <= limit ? sentence : `${sentence.slice(0, limit - 1).trimEnd()}…`;
+}
+
+function sourceGroundedGuide(section: Awaited<ReturnType<typeof getOfficialSection>>) {
+  const paragraphs = section.officialText.filter(Boolean);
+  const text = paragraphs.join(" ");
+  const sentences = sourceSentences(paragraphs);
+  const firstSentence = sentences[0] ?? `This section addresses ${section.heading}.`;
+  const quotedDefinition = text.match(/[“"]([^”"]+)[”"]\s+(includes|means)\s+([^.;]+)/i) ?? text.match(/\b(?:word|term)\s+([A-Za-z][A-Za-z -]{0,70})\s+(includes|means)\s+([^.;]+)/i);
+  const conditionalSentence = sentences.find(sentence => /\b(unless|except|if|only if|subject to|provided that|notwithstanding)\b/i.test(sentence));
+  const operativeSentence = sentences.find(sentence => /\b(shall|must|may|may not|shall not|is prohibited|is required)\b/i.test(sentence));
+  const table = section.officialBlocks?.find(block => block.type === "table");
+  const keyPoints: string[] = [];
+
+  let summary: string;
+  if (quotedDefinition) {
+    const [, term, verb, meaning] = quotedDefinition;
+    summary = `This is a definition rule. When federal law uses “${term.trim()},” this section says it ${verb.toLowerCase()} ${meaning.trim()}. In everyday terms, the law treats that listed thing as part of the defined word.`;
+    keyPoints.push(`The word “${verb.toLowerCase()}” broadens the category: the listed example is counted within “${term.trim()},” not treated as a separate category.`);
+    if (/\bother equivalent\b|and so forth/i.test(meaning)) keyPoints.push(`The phrase “${meaning.trim()}” keeps the definition from being limited to one exact local label.`);
+  } else {
+    summary = `In plain English, this section begins by saying: “${shortenSource(firstSentence)}” The rest of the displayed language explains the rule’s details and limits.`;
+    keyPoints.push(`The key statutory wording is “${shortenSource(operativeSentence ?? firstSentence, 180)}” Read that sentence together with the surrounding passages.`);
+  }
+
+  if (operativeSentence) {
+    const word = operativeSentence.match(/\b(shall not|may not|shall|must|may)\b/i)?.[1]?.toLowerCase();
+    if (word === "shall" || word === "must") keyPoints.push(`“${word}” is mandatory wording: the law is stating a requirement, not merely an option.`);
+    if (word === "shall not" || word === "may not") keyPoints.push(`“${word}” is restrictive wording: the law says the described action is not permitted.`);
+    if (word === "may") keyPoints.push(`“may” signals permission or discretion. It does not by itself make the action mandatory.`);
+  }
+
+  if (table) {
+    const headerWords = table.headers.slice(0, 3).join("; ");
+    keyPoints.push(`The original document includes a statutory table${headerWords ? ` with headings such as “${headerWords}”` : ""}. The table is part of the official rule, so read its row and column labels with the surrounding text.`);
+  }
+  if (keyPoints.length < 2) keyPoints.push(`The section uses ${paragraphs.length === 1 ? "one displayed passage" : `${paragraphs.length} displayed passages`}; the wording in each passage may qualify the others.`);
+
+  const watchFor = conditionalSentence
+    ? [`This limitation appears in the source: “${shortenSource(conditionalSentence, 180)}”`, "This guide explains wording in the displayed section; it does not determine how the rule applies to a particular person or situation."]
+    : ["Definitions, exceptions, and cross-references elsewhere in the Code can change how a word or rule applies.", "This guide explains wording in the displayed section; it does not determine how the rule applies to a particular person or situation."];
+
+  return {
+    label: "Plain-English guide — not legal advice" as const,
+    summary,
+    keyPoints: keyPoints.slice(0, 5),
+    watchFor,
+    trace: {
+      summaryParagraphs: [1],
+      keyPointParagraphs: keyPoints.slice(0, 5).map(() => [1]),
+      watchForParagraphs: watchFor.map(() => [1]),
+    },
+    generated: true,
+  };
+}
+
 async function executeProcedure(name: string, input: unknown) {
   const procedure = name.split(".").at(-1);
   if (procedure === "section") return responseEnvelope(await getOfficialSection(parseCitation(input)));
@@ -249,18 +310,7 @@ async function executeProcedure(name: string, input: unknown) {
   if (procedure === "explain") {
     const section = await getOfficialSection(parseCitation(input));
     if (section.officialText.length === 0) return errorEnvelope("Official text is unavailable for a reading guide.");
-    const topic = section.heading.replace(/^§[^.]+\.\s*/, "").replace(/^\d+\s+U\.S\.C\.\s*§[^.]+\.\s*/, "");
-    return responseEnvelope({
-      label: "Plain-English guide — not legal advice",
-      summary: `This section sets federal rules about ${topic || `the subject covered by ${section.title} U.S.C. § ${section.section}`}. Read the official language for the exact legal rule and any limits.`,
-      keyPoints: [
-        `The section has ${section.officialText.length} displayed source passage${section.officialText.length === 1 ? "" : "s"}.`,
-        section.officialBlocks?.some(block => block.type === "table") ? "The original document includes a table, which is preserved beside the statutory text." : "The displayed passages should be read together rather than in isolation.",
-      ],
-      watchFor: ["Definitions, conditions, exceptions, and cross-references can change how a rule applies.", "This is a reading aid, not legal advice about a particular situation."],
-      trace: { summaryParagraphs: [1], keyPointParagraphs: [[1], [1]], watchForParagraphs: [[1], [1]] },
-      generated: true,
-    });
+    return responseEnvelope(sourceGroundedGuide(section));
   }
   return errorEnvelope("This public Vercel reader endpoint supports official section retrieval only.");
 }
