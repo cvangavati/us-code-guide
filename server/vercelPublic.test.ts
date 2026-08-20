@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { afterEach, describe, expect, it } from "vitest";
-import { createVercelPublicApp } from "./vercelPublic";
+import { handleVercelPublicApi } from "./vercelPublicApi";
 
 const servers: ReturnType<typeof createServer>[] = [];
 
@@ -10,7 +10,7 @@ afterEach(async () => {
 
 describe("Vercel public reader API", () => {
   it("answers the deployed-style tRPC path without loading optional provider services", async () => {
-    const server = createServer(createVercelPublicApp());
+    const server = createServer(handleVercelPublicApi);
     servers.push(server);
     await new Promise<void>(resolve => server.listen(0, resolve));
     const address = server.address();

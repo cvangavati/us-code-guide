@@ -61,3 +61,4 @@
 - [ ] Verify the deployment build and document the Vercel configuration requirements, then save a synchronized checkpoint.
 - [ ] Resolve the Vercel `/api/trpc` function startup failure and verify a live non-fallback section response.
 - [x] Provide a Vercel-scoped public tRPC router for official-text and title-index retrieval without importing optional Manus OAuth, database, storage, or generation services.
+- [ ] Restore Vercel section retrieval for reader paths and prevent an empty reader state if the public API is unavailable.

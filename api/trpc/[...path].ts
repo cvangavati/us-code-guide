@@ -1,4 +1,4 @@
-import { createVercelPublicApp } from "../../server/vercelPublic";
+import { handleVercelPublicApi } from "../../server/vercelPublicApi";
 
-/** Vercel Function entry point for the browser-facing public reader API. */
-export default createVercelPublicApp();
+/** Vercel Function entry point for dependency-light public reader API calls. */
+export default handleVercelPublicApi;

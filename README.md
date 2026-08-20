@@ -66,7 +66,7 @@ The project is connected to the `user_github` remote. Saving a managed project c
 
 The supported deployment path is the project’s managed hosting, which keeps its server-only configuration in the hosting environment and supports custom domains. If you use a different host, it must serve the **Vite client build** rather than the bundled Node server file.
 
-The included `vercel.json` is an external-host compatibility layer. It runs `pnpm run build:client`, serves only `dist/public`, preserves reader URLs such as `/read/18/1030`, and routes the browser-facing official-text and title-index requests under `/api/trpc/*` to the lightweight Vercel Function at `api/trpc/[...path].ts`. In Vercel, use the repository root and do not override the Output Directory to `dist`; the configuration sets it to `dist/public` deliberately.
+The included `vercel.json` is an external-host compatibility layer. It runs `pnpm run build:client`, serves only `dist/public`, preserves reader URLs such as `/read/18/1030`, and routes browser-facing official-text and title-index requests under `/api/trpc/*` to the dependency-light Vercel Function at `api/trpc/[...path].ts`. In Vercel, use the repository root and do not override the Output Directory to `dist`; the configuration sets it to `dist/public` deliberately.
 
 > Do not copy Manus-managed environment values or keys into another host. Browser-local reading lists work without a database. The official-text reader uses public government sources, while provider-backed plain-English generation and Manus OAuth/storage routes remain intentionally outside the lightweight Vercel API. They require separately configured, Vercel-compatible server-side services if you intend to use those optional routes outside managed hosting.
 
