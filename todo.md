@@ -25,5 +25,5 @@
 - [x] Add topic-specific sample-section shortcuts so each plain-language topic leads directly to representative Code sections.
 - [x] Add compact representative-section previews to the title browser for easier scanning before opening a title.
 - [x] Add representative section-preview chips to all relevant title entries before a reader opens the title.
-- [ ] Re-run desktop and mobile verification on the final navigation state and save an updated checkpoint.
+- [x] Re-run desktop and mobile verification on the final navigation state and save an updated checkpoint.
 - [x] Show per-title representative-section preview chips before a reader selects a title and test the unselected-title previews.
