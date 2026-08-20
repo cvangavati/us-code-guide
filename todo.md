@@ -31,6 +31,6 @@
 - [x] Clearly label the search scope and source status for each result so users know when a result is a curated guide or an official section index.
 - [x] Add a local, persistent saved reading list with bookmark, remove, and revisit controls that does not require an account.
 - [x] Add a visual related-laws trail with clearly labeled, curated connections among commonly associated sections.
-- [ ] Add and run automated tests and desktop/mobile verification for search, saved lists, and related-law navigation, then save a checkpoint.
+- [x] Add and run automated tests and desktop/mobile verification for search, saved lists, and related-law navigation, then save a checkpoint.
 - [x] Add explicit official-section-index search entries and per-card source-scope labels alongside curated guide entries.
 - [x] Add an official GovInfo full-Code search link for queries outside the built-in plain-language guide index.
