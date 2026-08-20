@@ -45,7 +45,7 @@
 - [x] Add a persistent, keyboard-accessible dark-mode toggle optimized for long statutory reading.
 - [x] Update README.md with architecture, feature behavior, source caveats, local development, testing, and GitHub synchronization guidance.
 - [x] Add and run automated tests plus desktop/mobile verification for history and dark-mode flows.
-- [ ] Save a verified checkpoint that synchronizes the completed update to the connected GitHub repository.
+- [x] Save a verified checkpoint that synchronizes the completed update to the connected GitHub repository.
 - [x] Add a rendered reader test for the visible dark-mode control and verify persistent dark-theme state.
 - [x] Capture desktop and mobile verification with dark mode active and the recent-history panel open.
 - [x] Capture a desktop dark-mode verification with the recent-history panel open.
