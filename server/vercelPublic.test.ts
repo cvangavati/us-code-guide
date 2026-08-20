@@ -81,7 +81,7 @@ describe("Vercel public reader API", () => {
     const guide = sourceGroundedGuide({
       heading: "Rules of construction",
       officialText: [
-        "(a) In determining the meaning of any Act of Congress, except when the context indicates otherwise-",
+        "(a) In determining the meaning of any Act of Congress, unless the context indicates otherwise-",
         "words importing the singular include and apply to several persons, parties, or things;",
         "words importing the masculine gender include the feminine as well;",
       ],

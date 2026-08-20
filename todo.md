@@ -79,3 +79,4 @@
 - [x] Restate recurring statutory grammar and definition clauses in everyday English instead of repeating their formal source wording.
 - [x] Ensure source-format variation cannot leave the first statutory-construction line in raw formal language.
 - [ ] Verify the deployed guide restates Line 1 of 1 U.S.C. § 1 in everyday English after the source-format matcher repair, then save a synchronized checkpoint.
+- [x] Match the official source’s “unless the context indicates otherwise” wording so the first construction-rule line receives its everyday-English restatement.
