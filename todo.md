@@ -15,5 +15,5 @@
 - [x] Add automated tests for citation parsing, title selection, route updates, and the mobile official/plain-English switcher.
 - [x] Re-run desktop and mobile verification after the refinements and save the delivery checkpoint.
 - [x] Add interaction-level tests for title selection, route updates, and mobile reader-mode switching.
-- [ ] Save the verified final delivery checkpoint.
+- [x] Save the verified final delivery checkpoint.
 - [x] Add rendered-reader interaction tests for title selection, within-title section selection, route updates, and mobile panel switching.
