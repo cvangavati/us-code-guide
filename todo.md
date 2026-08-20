@@ -76,3 +76,4 @@
 - [x] Explain every displayed statutory line in the Vercel everyday-English guide rather than limiting the guide to the first five lines.
 - [ ] Add full-line coverage tests and verify the expanded guide through the live Vercel mutation.
 - [x] Exclude amendment-history fragments from multi-line guide output and link each explanation to its corresponding statutory source line.
+- [x] Restate recurring statutory grammar and definition clauses in everyday English instead of repeating their formal source wording.

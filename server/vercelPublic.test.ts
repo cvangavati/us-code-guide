@@ -76,4 +76,19 @@ describe("Vercel public reader API", () => {
     expect(guide.trace.keyPointParagraphs).toHaveLength(7);
     expect(guide.trace.keyPointParagraphs[6]).toEqual([7]);
   });
+
+  it("restates common statutory grammar rules in everyday English rather than repeating their formal wording", () => {
+    const guide = sourceGroundedGuide({
+      heading: "Rules of construction",
+      officialText: [
+        "In determining the meaning of any Act of Congress, except when the context indicates otherwise-",
+        "words importing the singular include and apply to several persons, parties, or things;",
+        "words importing the masculine gender include the feminine as well;",
+      ],
+    });
+
+    expect(guide.keyPoints[0]).toContain("default rules for reading federal laws");
+    expect(guide.keyPoints[1]).toContain("more than one person, group, or thing");
+    expect(guide.keyPoints[2]).toContain("cover women");
+  });
 });

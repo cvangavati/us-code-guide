@@ -272,6 +272,40 @@ function everydayWords(text: string) {
 }
 
 function explainLine(source: string) {
+  const normalized = source.replace(/\s+/g, " ").trim();
+  if (/^In determining the meaning of any Act of Congress, except when the context indicates otherwise/i.test(normalized)) {
+    return "These are default rules for reading federal laws. A particular law can use a word differently when its own wording makes that clear.";
+  }
+  if (/words importing the singular include and apply to several/i.test(normalized)) {
+    return "A word written as one thing can also mean more than one person, group, or thing.";
+  }
+  if (/words importing the plural include the singular/i.test(normalized)) {
+    return "A word written as more than one can also mean just one.";
+  }
+  if (/words importing the masculine gender include the feminine/i.test(normalized)) {
+    return "Words written as male also cover women.";
+  }
+  if (/words used in the present tense include the future/i.test(normalized)) {
+    return "A word written in the present tense can also cover the future.";
+  }
+  if (/the words? [“"]insane[”"] and [“"]insane person[”"]/i.test(normalized)) {
+    return "This old sentence uses several outdated labels for people with serious mental incapacity.";
+  }
+  if (/the words? [“"]person[”"] and [“"]whoever[”"] include corporations/i.test(normalized)) {
+    return "The words “person” and “whoever” can mean a business or group, not only a human being.";
+  }
+  if (/^[“"]officer[”"] includes?/i.test(normalized)) {
+    return "“Officer” can also mean someone the law allows to do the job’s duties.";
+  }
+  if (/^[“"]subscription[”"] includes?/i.test(normalized)) {
+    return "“Subscription” can also mean a mark someone meant to use as a signature.";
+  }
+  if (/^[“"]oath[”"] includes?/i.test(normalized)) {
+    return "An “oath” can also be a nonreligious promise, and “sworn” can also mean that promise was made.";
+  }
+  if (/^[“"]writing[”"] includes?/i.test(normalized)) {
+    return "“Writing” can include printed, typed, copied, photographed, or other visual text.";
+  }
   const definition = source.match(/[“"]([^”"]+)[”"]\s+(includes|means)\s+([^.;]+)/i) ?? source.match(/\b(?:word|term)\s+([A-Za-z][A-Za-z -]{0,70})\s+(includes|means)\s+([^.;]+)/i);
   if (definition) {
     const [, term, verb, meaning] = definition;
