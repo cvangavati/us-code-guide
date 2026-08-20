@@ -10,6 +10,8 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
+    "security:scan": "node scripts/security-scan.mjs",
+    "verify:public": "pnpm run check && pnpm test && pnpm run build && pnpm security:scan",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "dependencies": {

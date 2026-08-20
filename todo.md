@@ -49,3 +49,10 @@
 - [x] Add a rendered reader test for the visible dark-mode control and verify persistent dark-theme state.
 - [x] Capture desktop and mobile verification with dark mode active and the recent-history panel open.
 - [x] Capture a desktop dark-mode verification with the recent-history panel open.
+- [x] Audit repository-tracked files, client bundles, and runtime responses for API keys, tokens, secrets, internal URLs, and unintended sensitive data.
+- [x] Confirm server-only credentials are never sent to the browser and public frontend configuration contains no secrets.
+- [x] Add automated secret-scanning and public-build checks that fail when likely credentials or private environment files are included.
+- [x] Document the project’s public-data and secret-handling boundary without disclosing sensitive values.
+- [ ] Verify the hardened project, then save and synchronize a GitHub checkpoint.
+- [x] Add conservative public-response security headers and verify that API responses do not include unnecessary framework or environment details.
+- [x] Verify the hardened headers and absence of framework fingerprinting on a live `/api/trpc` response.

@@ -26,6 +26,19 @@ Plain-language search is intentionally transparent: its local results come from 
 
 Saved sections, custom folders, recent history, and theme preference are stored in the current browser’s local storage. They are not sent to the application database and are not synchronized between devices. Clearing browser site data removes them.
 
+## Public exposure and secret handling
+
+The public application does not need user API keys. Server-only credentials and platform configuration stay outside the client bundle. The site deliberately avoids an analytics snippet or public tracking configuration. The repository must never include environment files, private keys, access tokens, passwords, or secret values.
+
+Run the public-boundary check before a release:
+
+```bash
+pnpm security:scan
+pnpm verify:public
+```
+
+The scanner reports only affected file names and marker categories; it never prints a suspected credential value. It checks tracked project files and built public artifacts for common token/private-key signatures and disallowed public configuration names.
+
 ## Development
 
 ```bash
