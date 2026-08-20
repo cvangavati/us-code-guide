@@ -114,4 +114,39 @@ describe("reader interactions", () => {
     await user.click(screen.getByRole("button", { name: /county and parish/i }));
     await waitFor(() => expect(window.location.pathname).toBe("/read/1/3"));
   });
+
+  it("follows the official chapter route when a chapter index is available", async () => {
+    render(<Home />);
+    const routeStep = screen.getByText("Next section in this official chapter.").closest("button");
+    if (!routeStep) throw new Error("Expected an official chapter route button");
+    fireEvent.click(routeStep);
+    await waitFor(() => expect(window.location.pathname).toBe("/read/1/1030"));
+  });
+
+  it("creates a saved folder, moves a section into it, and renames it", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Reading list (1)" }));
+    await user.type(screen.getByRole("textbox", { name: "New folder" }), "Research");
+    await user.click(screen.getByRole("button", { name: "Create folder" }));
+    const folderOption = screen.getByRole("option", { name: "Research" });
+    const folderId = folderOption.getAttribute("value");
+    if (!folderId) throw new Error("Expected a generated folder id");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Move saved section" }), folderId);
+    expect(screen.getByText("Research")).toBeTruthy();
+    const researchFilter = screen.getByRole("button", { name: "Research (1)" });
+    await user.click(researchFilter);
+    expect(researchFilter.getAttribute("aria-pressed")).toBe("true");
+    await user.click(screen.getByRole("button", { name: /words denoting number, gender, and so forth/i }));
+    await waitFor(() => expect(window.location.pathname).toBe("/read/1/1"));
+    await user.click(screen.getByRole("button", { name: "Remove 1 USC section 1 from saved folders" }));
+    expect(screen.getByRole("button", { name: "Research (0)" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Rename" }));
+    const rename = screen.getByRole("textbox", { name: "Rename folder" });
+    await user.clear(rename);
+    await user.type(rename, "Primary research");
+    await user.click(screen.getByRole("button", { name: "Save name" }));
+    expect(screen.getByText("Primary research")).toBeTruthy();
+  });
 });

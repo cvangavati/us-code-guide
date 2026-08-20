@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { parseUSCodeCitation, readerPath, selectSectionForReader, selectTitleForReader, setReaderMode } from "@shared/citation";
 import { CODE_TOPICS, titleDescription, titleSectionPreviews } from "@shared/navigation";
-import { isSavedSection, officialGovInfoSearchUrl, readSavedSections, relatedLawsFor, searchPlainLanguage, toggleSavedSection, writeSavedSections } from "@shared/readerFeatures";
+import { chapterTrailFor, createSavedFolder, deleteSavedFolder, isSavedSection, moveSavedSection, officialGovInfoSearchUrl, readSavedLibrary, relatedLawsFor, renameSavedFolder, searchPlainLanguage, toggleSavedSection, writeSavedLibrary } from "@shared/readerFeatures";
 import { US_CODE_TITLES, type CodeSection, type PlainEnglishGuide } from "@shared/usCode";
 import { ArrowUpRight, Bookmark, BookmarkCheck, BookOpenText, ChevronRight, ExternalLink, FileText, GitFork, Info, LoaderCircle, Menu, Search, ShieldCheck, Sparkles, X } from "lucide-react";
 import React, { useMemo, useState } from "react";
@@ -141,7 +141,11 @@ export default function Home() {
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
   const [plainSearch, setPlainSearch] = useState("");
   const [showReadingList, setShowReadingList] = useState(false);
-  const [savedSections, setSavedSections] = useState(() => readSavedSections());
+  const [savedLibrary, setSavedLibrary] = useState(() => readSavedLibrary());
+  const [newFolderName, setNewFolderName] = useState("");
+  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [folderFilter, setFolderFilter] = useState<string | "all">("all");
   const input = useMemo(() => ({ title: citation.title, section: citation.section }), [citation.title, citation.section]);
   const sectionQuery = trpc.usCode.section.useQuery(input, { staleTime: 10 * 60_000, retry: 1 });
   const titleSections = trpc.usCode.titleSections.useQuery({ title: citation.title }, { staleTime: 10 * 60_000, retry: 1, enabled: !sectionQuery.isFetching });
@@ -162,8 +166,10 @@ export default function Home() {
     return Array.from(groups.entries());
   }, [titleSections.data]);
   const activeSectionCount = titleSections.data?.length ?? 0;
+  const savedSections = savedLibrary.sections;
   const relatedLaws = liveSection ? relatedLawsFor(liveSection.title, liveSection.section) : [];
   const currentSectionIsSaved = liveSection ? isSavedSection(savedSections, liveSection.title, liveSection.section) : false;
+  const chapterTrail = useMemo(() => chapterTrailFor(citation.title, citation.section, titleSections.data ?? []), [citation.title, citation.section, titleSections.data]);
 
   const moveToCitation = (next: { title: number; section: string }) => {
     if (next.title < 1 || next.title > 54) return;
@@ -191,19 +197,41 @@ export default function Home() {
 
   const toggleCurrentSection = () => {
     if (!liveSection) return;
-    setSavedSections(current => {
-      const next = toggleSavedSection(current, { title: liveSection.title, section: liveSection.section, heading: liveSection.heading });
-      writeSavedSections(next);
+    setSavedLibrary(current => {
+      const next = { ...current, sections: toggleSavedSection(current.sections, { title: liveSection.title, section: liveSection.section, heading: liveSection.heading, folderId: "saved" }) };
+      writeSavedLibrary(next);
       return next;
     });
   };
 
   const removeSavedSection = (title: number, section: string) => {
-    setSavedSections(current => {
-      const next = current.filter(item => !(item.title === title && item.section === section));
-      writeSavedSections(next);
+    setSavedLibrary(current => {
+      const next = { ...current, sections: current.sections.filter(item => !(item.title === title && item.section === section)) };
+      writeSavedLibrary(next);
       return next;
     });
+  };
+
+  const updateSavedLibrary = (updater: (current: typeof savedLibrary) => typeof savedLibrary) => {
+    setSavedLibrary(current => {
+      const next = updater(current);
+      writeSavedLibrary(next);
+      return next;
+    });
+  };
+
+  const addFolder = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!newFolderName.trim()) return;
+    updateSavedLibrary(current => createSavedFolder(current, newFolderName));
+    setNewFolderName("");
+  };
+
+  const submitRenameFolder = (event: React.FormEvent, folderId: string) => {
+    event.preventDefault();
+    updateSavedLibrary(current => renameSavedFolder(current, folderId, renameValue));
+    setRenamingFolderId(null);
+    setRenameValue("");
   };
 
   return (
@@ -274,7 +302,8 @@ export default function Home() {
               </div>
             </div>
           </div>
-          {showReadingList && <section aria-label="Your saved reading list" className="mt-5 overflow-hidden rounded-xl border border-[#d0c6b0] bg-[#fbf8ef]"><div className="flex items-center justify-between gap-3 border-b border-[#ded5c1] px-4 py-4 sm:px-5"><div><p className="law-mono text-[10px] uppercase tracking-[0.14em] text-[#667365]">Your reading list</p><p className="mt-1 text-sm text-[#575248]">Saved only in this browser. No account required.</p></div><button onClick={() => setShowReadingList(false)} aria-label="Close reading list" className="rounded-full border border-[#cfc5af] p-2 text-[#625d53] hover:bg-[#eee8d9]"><X className="h-4 w-4" /></button></div>{savedSections.length > 0 ? <div className="grid gap-2 p-3 sm:grid-cols-2 sm:p-4">{savedSections.map(item => <div key={`${item.title}-${item.section}`} className="flex items-center justify-between gap-3 rounded-lg border border-[#ddd3bf] bg-white p-3"><button onClick={() => moveToCitation(item)} className="min-w-0 text-left"><p className="truncate text-sm font-medium text-[#2d332e]">{item.heading}</p><p className="law-mono mt-1 text-[9px] uppercase tracking-[0.08em] text-[#647163]">{item.title} USC § {item.section}</p></button><button onClick={() => removeSavedSection(item.title, item.section)} aria-label={`Remove ${item.title} USC section ${item.section} from reading list`} className="shrink-0 rounded-md p-2 text-[#766d60] hover:bg-[#f4e8e2] hover:text-[#9a3e32]"><X className="h-4 w-4" /></button></div>)}</div> : <p className="p-5 text-sm leading-6 text-[#645d52]">Save a section from the reader to keep it here. Your list stays on this device.</p>}</section>}
+          {chapterTrail && <section aria-label="Official chapter route" className="mt-5 overflow-hidden rounded-xl border border-[#c7d8c7] bg-[#edf4eb]"><div className="flex flex-col justify-between gap-3 border-b border-[#c7d8c7] px-4 py-4 sm:flex-row sm:items-center sm:px-5"><div><p className="law-mono text-[10px] uppercase tracking-[0.14em] text-[#4e7455]">Official chapter route</p><h3 className="law-serif mt-1 text-2xl text-[#23462c]">Keep moving through {chapterTrail.chapter}</h3></div><p className="max-w-xs text-xs leading-5 text-[#56715b]">This route follows the displayed official chapter order. It is structural navigation, not an editorial legal connection.</p></div><div className="grid gap-2 p-3 sm:grid-cols-3 sm:p-4">{chapterTrail.steps.map((step, index) => <button onClick={() => moveToCitation({ title: step.title, section: step.section })} key={`${step.title}-${step.section}-${index}`} className="group rounded-lg border border-[#c3d5c2] bg-white p-3 text-left transition hover:border-[#628d6c] hover:bg-[#f8fcf7]"><span className="law-mono flex h-5 w-5 items-center justify-center rounded-full bg-[#dcebd9] text-[9px] text-[#30633d]">{index + 1}</span><span className="mt-2 block text-sm font-medium text-[#284d31]">{step.label}</span><span className="mt-1 block text-xs leading-5 text-[#5b6a5c]">{step.connection}</span><span className="law-mono mt-2 block text-[9px] uppercase tracking-[0.08em] text-[#55765c]">{step.title} USC § {step.section} → open</span></button>)}</div></section>}
+          {showReadingList && <section aria-label="Your saved reading list" className="mt-5 overflow-hidden rounded-xl border border-[#d0c6b0] bg-[#fbf8ef]"><div className="flex items-center justify-between gap-3 border-b border-[#ded5c1] px-4 py-4 sm:px-5"><div><p className="law-mono text-[10px] uppercase tracking-[0.14em] text-[#667365]">Your reading folders</p><p className="mt-1 text-sm text-[#575248]">Saved only in this browser. No account required.</p></div><button onClick={() => setShowReadingList(false)} aria-label="Close reading list" className="rounded-full border border-[#cfc5af] p-2 text-[#625d53] hover:bg-[#eee8d9]"><X className="h-4 w-4" /></button></div><form onSubmit={addFolder} className="flex flex-col gap-2 border-b border-[#e0d8c6] bg-[#f5f0e5] p-3 sm:flex-row sm:items-center sm:px-5"><label htmlFor="new-folder-name" className="law-mono text-[10px] uppercase tracking-[0.1em] text-[#687166] sm:w-32">New folder</label><input id="new-folder-name" value={newFolderName} onChange={event => setNewFolderName(event.target.value)} placeholder="For example, Work questions" className="h-9 min-w-0 flex-1 rounded-md border border-[#cdc3af] bg-white px-3 text-sm outline-none focus:border-[#4d7858] focus:ring-2 focus:ring-[#b9d8bd]" /><button className="h-9 rounded-md bg-[#2b6239] px-4 text-xs font-medium text-white transition hover:bg-[#1e4a2a]">Create folder</button></form><div className="flex gap-2 overflow-x-auto border-b border-[#e0d8c6] bg-[#f9f5eb] px-3 py-3 sm:px-5" role="group" aria-label="Filter saved folders"><button aria-pressed={folderFilter === "all"} onClick={() => setFolderFilter("all")} className={`min-w-max rounded-full border px-3 py-1.5 text-xs ${folderFilter === "all" ? "border-[#487a54] bg-[#dcebd9] text-[#245232]" : "border-[#d1c5ad] bg-white text-[#675f54]"}`}>All folders ({savedSections.length})</button>{savedLibrary.folders.map(folder => <button key={folder.id} aria-pressed={folderFilter === folder.id} onClick={() => setFolderFilter(folder.id)} className={`min-w-max rounded-full border px-3 py-1.5 text-xs ${folderFilter === folder.id ? "border-[#487a54] bg-[#dcebd9] text-[#245232]" : "border-[#d1c5ad] bg-white text-[#675f54]"}`}>{folder.name} ({savedSections.filter(item => (item.folderId ?? "saved") === folder.id).length})</button>)}</div><div className="grid gap-3 p-3 sm:p-4">{(folderFilter === "all" ? savedLibrary.folders : savedLibrary.folders.filter(folder => folder.id === folderFilter)).map(folder => { const folderItems = savedSections.filter(item => (item.folderId ?? "saved") === folder.id); return <section key={folder.id} className="overflow-hidden rounded-xl border border-[#ddd3bf] bg-white"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e7dfcd] bg-[#fcfaf4] px-3 py-3"><div>{renamingFolderId === folder.id ? <form onSubmit={event => submitRenameFolder(event, folder.id)} className="flex items-center gap-2"><label htmlFor={`rename-${folder.id}`} className="sr-only">Rename folder</label><input id={`rename-${folder.id}`} value={renameValue} onChange={event => setRenameValue(event.target.value)} className="h-8 rounded-md border border-[#bdcdbd] px-2 text-sm outline-none focus:ring-2 focus:ring-[#b9d8bd]" autoFocus /><button className="rounded-md bg-[#e2f0df] px-2 py-1.5 text-xs text-[#285a35]">Save name</button><button type="button" onClick={() => setRenamingFolderId(null)} className="px-2 py-1.5 text-xs text-[#746c60]">Cancel</button></form> : <><p className="text-sm font-medium text-[#304333]">{folder.name}</p><p className="law-mono mt-1 text-[9px] uppercase tracking-[0.08em] text-[#738071]">{folderItems.length} saved {folderItems.length === 1 ? "section" : "sections"}</p></>}</div>{!folder.isDefault && renamingFolderId !== folder.id && <div className="flex items-center gap-1"><button onClick={() => { setRenamingFolderId(folder.id); setRenameValue(folder.name); }} className="rounded-md px-2 py-1.5 text-xs text-[#49634e] hover:bg-[#e9f2e7]">Rename</button><button onClick={() => { updateSavedLibrary(current => deleteSavedFolder(current, folder.id)); if (folderFilter === folder.id) setFolderFilter("all"); }} className="rounded-md px-2 py-1.5 text-xs text-[#8a493d] hover:bg-[#f7ebe7]">Delete</button></div>}</div>{folderItems.length > 0 ? <div className="divide-y divide-[#eee7d9]">{folderItems.map(item => <div key={`${item.title}-${item.section}`} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between"><button onClick={() => moveToCitation(item)} className="min-w-0 text-left"><p className="truncate text-sm font-medium text-[#2d332e]">{item.heading}</p><p className="law-mono mt-1 text-[9px] uppercase tracking-[0.08em] text-[#647163]">{item.title} USC § {item.section}</p></button><div className="flex items-center gap-2"><label className="sr-only" htmlFor={`move-${item.title}-${item.section}`}>Move saved section</label><select id={`move-${item.title}-${item.section}`} value={item.folderId ?? "saved"} onChange={event => updateSavedLibrary(current => moveSavedSection(current, item.title, item.section, event.target.value))} className="h-8 max-w-40 rounded-md border border-[#d5cbb7] bg-[#fffdf8] px-2 text-xs text-[#565147]"><option value={folder.id}>Move to {folder.name}</option>{savedLibrary.folders.filter(candidate => candidate.id !== folder.id).map(candidate => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</select><button onClick={() => removeSavedSection(item.title, item.section)} aria-label={`Remove ${item.title} USC section ${item.section} from saved folders`} className="rounded-md p-2 text-[#766d60] hover:bg-[#f4e8e2] hover:text-[#9a3e32]"><X className="h-4 w-4" /></button></div></div>)}</div> : <p className="p-3 text-sm leading-6 text-[#6b6458]">{folder.isDefault ? "Save a section from the reader to keep it here." : "Move a saved section here using the folder menu."}</p>}</section>; })}</div></section>}
           <div className="mt-5 rounded-xl border border-[#d8d0bc] bg-[#eee8d9] p-4 sm:p-5">
             <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline"><p className="law-mono text-[10px] uppercase tracking-[0.14em] text-[#637063]">Not sure where to begin?</p><p className="text-xs text-[#6e675c]">Choose a familiar doorway into the Code.</p></div>
             <div className="mt-3 flex flex-wrap gap-2">{commonStartingPoints.map(item => <button onClick={() => moveToCitation({ title: item.title, section: item.section })} key={item.citation} className="group rounded-lg border border-[#cfc5ae] bg-[#faf7ef] px-3 py-2 text-left transition hover:border-[#60906b] hover:bg-[#edf4eb] active:scale-[.98]"><span className="block text-xs font-medium text-[#33342e]">{item.label}</span><span className="law-mono mt-1 block text-[9px] tracking-[0.08em] text-[#777064]">{item.citation}</span></button>)}</div>

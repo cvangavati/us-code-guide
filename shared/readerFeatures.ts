@@ -26,6 +26,31 @@ export type SavedSection = {
   section: string;
   heading: string;
   savedAt: number;
+  folderId?: string;
+};
+
+export type SavedFolder = {
+  id: string;
+  name: string;
+  createdAt: number;
+  isDefault?: boolean;
+};
+
+export type SavedLibrary = {
+  folders: SavedFolder[];
+  sections: SavedSection[];
+};
+
+export type ChapterIndexEntry = {
+  section: string;
+  heading: string;
+  chapter?: string;
+};
+
+export type ChapterTrail = {
+  chapter: string;
+  currentLabel: string;
+  steps: Array<{ title: number; section: string; label: string; connection: string }>;
 };
 
 const GUIDE_SECTIONS: Array<Omit<PlainLanguageSearchResult, "sourceStatus">> = [
@@ -128,7 +153,36 @@ export function relatedLawsFor(title: number, section: string): RelatedLaw[] {
   return RELATED_LAWS[`${title}:${section.toLowerCase()}`] ?? [];
 }
 
+export function chapterTrailFor(title: number, currentSection: string, entries: ChapterIndexEntry[]): ChapterTrail | null {
+  if (entries.length === 0) return null;
+  const groups = new Map<string, ChapterIndexEntry[]>();
+  entries.forEach(entry => {
+    const chapter = entry.chapter?.replace(/^CHAPTER\s*/i, "Chapter ") || "Sections";
+    groups.set(chapter, [...(groups.get(chapter) ?? []), entry]);
+  });
+  const chapters = Array.from(groups.entries()).map(([chapter, sections]) => ({ chapter, sections }));
+  const currentChapterIndex = chapters.findIndex(group => group.sections.some(entry => entry.section.toLowerCase() === currentSection.toLowerCase()));
+  const chapterIndex = currentChapterIndex >= 0 ? currentChapterIndex : 0;
+  const activeChapter = chapters[chapterIndex];
+  const activeSectionIndex = activeChapter.sections.findIndex(entry => entry.section.toLowerCase() === currentSection.toLowerCase());
+  const steps: ChapterTrail["steps"] = [];
+  const previous = activeSectionIndex > 0 ? activeChapter.sections[activeSectionIndex - 1] : undefined;
+  const next = activeSectionIndex >= 0 ? activeChapter.sections[activeSectionIndex + 1] : activeChapter.sections[0];
+  const nextChapter = chapters[chapterIndex + 1]?.sections[0];
+  if (previous) steps.push({ title, section: previous.section, label: previous.heading, connection: "Previous section in this official chapter." });
+  if (next) steps.push({ title, section: next.section, label: next.heading, connection: "Next section in this official chapter." });
+  if (nextChapter) steps.push({ title, section: nextChapter.section, label: nextChapter.heading, connection: `First section in ${chapters[chapterIndex + 1].chapter}.` });
+  if (steps.length === 0 && activeChapter.sections[0]) {
+    const first = activeChapter.sections[0];
+    steps.push({ title, section: first.section, label: first.heading, connection: "First listed section in this official chapter." });
+  }
+  return { chapter: activeChapter.chapter, currentLabel: `Title ${title} · ${activeChapter.chapter}`, steps };
+}
+
 const READING_LIST_KEY = "peoples-code-reading-list-v1";
+export const DEFAULT_FOLDER_ID = "saved";
+
+const defaultFolder = (): SavedFolder => ({ id: DEFAULT_FOLDER_ID, name: "Saved sections", createdAt: 0, isDefault: true });
 
 export function readSavedSections(): SavedSection[] {
   if (typeof window === "undefined") return [];
@@ -142,6 +196,49 @@ export function readSavedSections(): SavedSection[] {
 
 export function writeSavedSections(items: SavedSection[]) {
   if (typeof window !== "undefined") window.localStorage.setItem(READING_LIST_KEY, JSON.stringify(items));
+}
+
+export function readSavedLibrary(): SavedLibrary {
+  if (typeof window === "undefined") return { folders: [defaultFolder()], sections: [] };
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(READING_LIST_KEY) ?? "null") as SavedLibrary | SavedSection[] | null;
+    if (Array.isArray(stored)) return { folders: [defaultFolder()], sections: stored.map(section => ({ ...section, folderId: section.folderId ?? DEFAULT_FOLDER_ID })) };
+    const folders = Array.isArray(stored?.folders) ? stored.folders.filter(folder => typeof folder?.id === "string" && typeof folder?.name === "string") : [];
+    const sections = Array.isArray(stored?.sections) ? stored.sections.filter(item => typeof item?.title === "number" && typeof item?.section === "string" && typeof item?.heading === "string") : [];
+    return { folders: folders.some(folder => folder.id === DEFAULT_FOLDER_ID) ? folders : [defaultFolder(), ...folders], sections: sections.map(section => ({ ...section, folderId: section.folderId ?? DEFAULT_FOLDER_ID })) };
+  } catch {
+    return { folders: [defaultFolder()], sections: [] };
+  }
+}
+
+export function writeSavedLibrary(library: SavedLibrary) {
+  if (typeof window !== "undefined") window.localStorage.setItem(READING_LIST_KEY, JSON.stringify(library));
+}
+
+export function createSavedFolder(library: SavedLibrary, name: string): SavedLibrary {
+  const trimmed = name.trim().replace(/\s+/g, " ");
+  if (!trimmed || library.folders.some(folder => folder.name.toLowerCase() === trimmed.toLowerCase())) return library;
+  const id = `folder-${trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "list"}-${Date.now().toString(36)}`;
+  return { ...library, folders: [...library.folders, { id, name: trimmed, createdAt: Date.now() }] };
+}
+
+export function renameSavedFolder(library: SavedLibrary, folderId: string, name: string): SavedLibrary {
+  const trimmed = name.trim().replace(/\s+/g, " ");
+  if (!trimmed || folderId === DEFAULT_FOLDER_ID || library.folders.some(folder => folder.id !== folderId && folder.name.toLowerCase() === trimmed.toLowerCase())) return library;
+  return { ...library, folders: library.folders.map(folder => folder.id === folderId ? { ...folder, name: trimmed } : folder) };
+}
+
+export function deleteSavedFolder(library: SavedLibrary, folderId: string): SavedLibrary {
+  if (folderId === DEFAULT_FOLDER_ID) return library;
+  return {
+    folders: library.folders.filter(folder => folder.id !== folderId),
+    sections: library.sections.map(section => section.folderId === folderId ? { ...section, folderId: DEFAULT_FOLDER_ID } : section),
+  };
+}
+
+export function moveSavedSection(library: SavedLibrary, title: number, section: string, folderId: string): SavedLibrary {
+  if (!library.folders.some(folder => folder.id === folderId)) return library;
+  return { ...library, sections: library.sections.map(item => item.title === title && item.section === section ? { ...item, folderId } : item) };
 }
 
 export function isSavedSection(items: SavedSection[], title: number, section: string) {

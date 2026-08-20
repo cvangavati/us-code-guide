@@ -34,3 +34,10 @@
 - [x] Add and run automated tests and desktop/mobile verification for search, saved lists, and related-law navigation, then save a checkpoint.
 - [x] Add explicit official-section-index search entries and per-card source-scope labels alongside curated guide entries.
 - [x] Add an official GovInfo full-Code search link for queries outside the built-in plain-language guide index.
+- [x] Create a scalable chapter-level related-law trail model that gives every indexed chapter a next-step navigation path without presenting editorial connections as legal conclusions.
+- [x] Show chapter-specific related-law trails in the reader with clear source and curation labels.
+- [x] Add private browser-local saved folders with create, rename, delete, and section-assignment controls.
+- [x] Allow users to filter, open, move, and remove saved sections within custom folders.
+- [ ] Add and run automated tests and desktop/mobile verification for chapter trails and saved-folder management, then save a checkpoint.
+- [x] Add a filtered-folder interaction test that opens a saved section and verifies the reader route updates.
+- [x] Add a saved-folder filter so readers can focus the reading list on one folder at a time, with tested open, move, and remove flows in the filtered view.

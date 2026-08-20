@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { officialGovInfoSearchUrl, relatedLawsFor, searchPlainLanguage, toggleSavedSection } from "./readerFeatures";
+import { chapterTrailFor, createSavedFolder, deleteSavedFolder, moveSavedSection, officialGovInfoSearchUrl, relatedLawsFor, renameSavedFolder, searchPlainLanguage, toggleSavedSection, type SavedLibrary } from "./readerFeatures";
 
 describe("reader feature models", () => {
   it("finds a plain-language section match without requiring a citation", () => {
@@ -33,5 +33,33 @@ describe("reader feature models", () => {
     expect(url).toContain("govinfo.gov");
     expect(decodeURIComponent(url)).toContain("USCODE");
     expect(decodeURIComponent(url)).toContain("water pollution");
+  });
+
+  it("builds a source-structured route within the current official chapter", () => {
+    const trail = chapterTrailFor(1, "2", [
+      { section: "1", heading: "First definition", chapter: "CHAPTER 1" },
+      { section: "2", heading: "Second definition", chapter: "CHAPTER 1" },
+      { section: "3", heading: "Third definition", chapter: "CHAPTER 1" },
+      { section: "101", heading: "Next chapter", chapter: "CHAPTER 2" },
+    ]);
+    expect(trail?.chapter).toBe("Chapter 1");
+    expect(trail?.steps).toEqual(expect.arrayContaining([
+      expect.objectContaining({ section: "1", connection: "Previous section in this official chapter." }),
+      expect.objectContaining({ section: "3", connection: "Next section in this official chapter." }),
+      expect.objectContaining({ section: "101" }),
+    ]));
+  });
+
+  it("creates, renames, moves into, and deletes a local saved folder without losing sections", () => {
+    const initial: SavedLibrary = { folders: [{ id: "saved", name: "Saved sections", createdAt: 0, isDefault: true }], sections: [{ title: 17, section: "106", heading: "Exclusive rights", savedAt: 1, folderId: "saved" }] };
+    const created = createSavedFolder(initial, "Copyright research");
+    const folder = created.folders.find(item => item.name === "Copyright research");
+    expect(folder).toBeDefined();
+    const renamed = renameSavedFolder(created, folder!.id, "Copyright notes");
+    const moved = moveSavedSection(renamed, 17, "106", folder!.id);
+    expect(moved.sections[0].folderId).toBe(folder!.id);
+    const deleted = deleteSavedFolder(moved, folder!.id);
+    expect(deleted.sections[0].folderId).toBe("saved");
+    expect(deleted.folders.some(item => item.id === folder!.id)).toBe(false);
   });
 });
