@@ -150,10 +150,13 @@ export function extractGovInfoSection(html: string, title: number, section: stri
   const start = html.indexOf(marker);
   if (start < 0) return [];
   const next = html.indexOf("<!-- documentid:", start + marker.length);
-  return compactOfficialHtml(html.slice(start, next >= 0 ? next : undefined));
+  const document = html.slice(start, next >= 0 ? next : undefined);
+  const heading = document.match(/<!-- field-start:head -->([\s\S]*?)<!-- field-end:head -->/i)?.[1] ?? "";
+  const statute = document.match(/<!-- field-start:statute -->([\s\S]*?)<!-- field-end:statute -->/i)?.[1] ?? document;
+  return compactOfficialHtml(`${heading}\n${statute}`);
 }
 
-export type TitleSectionLink = { section: string; heading: string };
+export type TitleSectionLink = { section: string; heading: string; chapter?: string };
 
 export function extractGovInfoTitleIndex(html: string, title: number): TitleSectionLink[] {
   const matcher = new RegExp(`<!-- documentid:${title}_([A-Za-z0-9.-]+)[^>]*-->[\\s\\S]{0,900}?<h3[^>]*>([\\s\\S]*?)<\\/h3>`, "g");
@@ -163,7 +166,8 @@ export function extractGovInfoTitleIndex(html: string, title: number): TitleSect
     const section = match[1];
     const heading = decodeHtml(match[2].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim())
       .replace(new RegExp(`^§?${section}\\.?\\s*`), "") || `Section ${section}`;
-    if (section && !section.startsWith("-") && !unique.has(section)) unique.set(section, { section, heading });
+    const chapter = match[0].match(/itempath:[^\n]*\/(CHAPTER[^\n/]+)/i)?.[1]?.replace(/\s+/g, " ").trim();
+    if (section && /^\d/.test(section) && !unique.has(section)) unique.set(section, { section, heading, chapter });
     if (unique.size >= 80) break;
   }
   return Array.from(unique.values());
@@ -224,10 +228,12 @@ export async function getOfficialSection(title: number, section: string): Promis
     });
 
     if (!response.ok) throw new Error(`OLRC returned ${response.status}`);
-    const lines = compactOfficialHtml(await response.text());
-    if (lines.length < 2) throw new Error("OLRC response did not contain readable section text");
+    const sourceHtml = await response.text();
+    const lines = extractGovInfoSection(sourceHtml, title, section);
+    const readableLines = lines.length >= 2 ? lines : compactOfficialHtml(sourceHtml);
+    if (readableLines.length < 2) throw new Error("OLRC response did not contain readable section text");
 
-    const { heading, officialText } = splitHeading(lines, title, section);
+    const { heading, officialText } = splitHeading(readableLines, title, section);
     const value: CodeSection = {
       title,
       section,

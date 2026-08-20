@@ -49,6 +49,20 @@ describe("reader interactions", () => {
     await waitFor(() => expect(window.location.pathname).toBe("/read/18/1"));
   });
 
+  it("narrows title browsing when a reader starts from an everyday topic", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+    await user.click(screen.getByRole("button", { name: "Work & money" }));
+    expect(screen.getByRole("button", { name: "Work & money" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getAllByRole("button", { name: /internal revenue code/i }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /the congress/i })).toBeNull();
+  });
+
+  it("shows a representative section preview for an unselected title before it is opened", () => {
+    render(<Home />);
+    expect(screen.getByTitle("Choosing presidential electors").textContent).toBe("§1");
+  });
+
   it("updates the reader route after selecting a discovered section", async () => {
     render(<Home />);
     fireEvent.click(screen.getByTitle("§1030. Computer fraud"));

@@ -17,3 +17,13 @@
 - [x] Add interaction-level tests for title selection, route updates, and mobile reader-mode switching.
 - [x] Save the verified final delivery checkpoint.
 - [x] Add rendered-reader interaction tests for title selection, within-title section selection, route updates, and mobile panel switching.
+- [x] Add plain-language topic pathways that lead to relevant U.S. Code titles and sample sections.
+- [x] Make the title browser easier to scan with title descriptions, category grouping, and direct section counts or previews.
+- [x] Add a structured title-to-chapter-to-section navigation path with understandable labels where source structure is available.
+- [x] Simplify the reader’s wayfinding with persistent breadcrumbs and clear back-to-browse controls.
+- [x] Add and run desktop/mobile navigation-flow tests, then save a checkpoint.
+- [x] Add topic-specific sample-section shortcuts so each plain-language topic leads directly to representative Code sections.
+- [x] Add compact representative-section previews to the title browser for easier scanning before opening a title.
+- [x] Add representative section-preview chips to all relevant title entries before a reader opens the title.
+- [ ] Re-run desktop and mobile verification on the final navigation state and save an updated checkpoint.
+- [x] Show per-title representative-section preview chips before a reader selects a title and test the unselected-title previews.
