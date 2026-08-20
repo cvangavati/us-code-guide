@@ -90,3 +90,4 @@
 - [ ] Add real-section regression coverage for a substantive section, then re-verify the public Vercel guide and save the correction.
 - [x] Explicitly exclude standalone derivation and similar editorial headings in both parser paths, with dedicated managed and Vercel regression tests.
 - [ ] Re-check 5 U.S.C. § 552 on the deployed reader and refine any remaining source-like fallback wording before final delivery.
+- [x] Make practical translation rules recognize statutory paragraph labels such as “(a)(4)(A)” and add labeled-line regression coverage.

@@ -113,9 +113,9 @@ describe("Vercel public reader API", () => {
     const guide = sourceGroundedGuide({
       heading: "Public records",
       officialText: [
-        "Except to the extent that a person has actual and timely notice of the terms of it, a person may not be adversely affected by a matter required to be published and not so published.",
-        "Fees shall be limited to reasonable standard charges for document search, duplication, and review when records are requested for commercial use.",
-        "In any action by a requester regarding the waiver of fees under this section, the court shall determine the matter de novo.",
+        "(a)(1) Except to the extent that a person has actual and timely notice of the terms of it, a person may not be adversely affected by a matter required to be published and not so published.",
+        "(a)(4)(A)(ii)(I) Fees shall be limited to reasonable standard charges for document search, duplication, and review when records are requested for commercial use.",
+        "(a)(4)(A)(vii) In any action by a requester regarding the waiver of fees under this section, the court shall determine the matter de novo.",
       ],
     });
 

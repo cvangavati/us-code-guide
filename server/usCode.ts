@@ -159,68 +159,69 @@ function managedEverydayWords(text: string) {
 }
 
 function managedPracticalRuleExplanation(source: string) {
-  if (/^Each agency (?:shall|must) make available to the public information/i.test(source)) {
+  const ruleText = source.replace(/^\s*(?:(?:\([a-z0-9]+\))+|[a-z0-9]+[.)-])\s*/i, "");
+  if (/^Each agency (?:shall|must) make available to the public information/i.test(ruleText)) {
     return "Federal agencies have to make the listed information available to the public.";
   }
-  if (/^Each agency (?:shall|must) separately state and currently publish in the Federal Register/i.test(source)) {
+  if (/^Each agency (?:shall|must) separately state and currently publish in the Federal Register/i.test(ruleText)) {
     return "Federal agencies have to keep a current public notice in the Federal Register explaining where they work, how they operate, and where people can get information.";
   }
-  if (/^Descriptions of (?:its|the) central and field organization/i.test(source)) {
+  if (/^Descriptions of (?:its|the) central and field organization/i.test(ruleText)) {
     return "The public notice must explain where the agency operates, who people can contact, and how to get information.";
   }
-  if (/^Statements of the general course and method/i.test(source)) {
+  if (/^Statements of the general course and method/i.test(ruleText)) {
     return "The public notice must explain how the agency makes decisions and what procedures people can use.";
   }
-  if (/^Rules of procedure, descriptions of forms/i.test(source)) {
+  if (/^Rules of procedure, descriptions of forms/i.test(ruleText)) {
     return "The public notice must show the agency's procedures, available forms, and filing requirements.";
   }
-  if (/^Substantive rules of general applicability/i.test(source)) {
+  if (/^Substantive rules of general applicability/i.test(ruleText)) {
     return "The public notice must include the agency's rules, policies, and general interpretations.";
   }
-  if (/^Each amendment, revision, or repeal/i.test(source)) {
+  if (/^Each amendment, revision, or repeal/i.test(ruleText)) {
     return "Changes to those public materials must also be made public.";
   }
-  if (/^Except to the extent that a person has actual and timely notice/i.test(source)) {
+  if (/^Except to the extent that a person has actual and timely notice/i.test(ruleText)) {
     return "An unpublished rule generally cannot be used against someone who did not receive timely notice of it.";
   }
-  if (/^Each agency.*make available for public inspection in an electronic format/i.test(source)) {
+  if (/^Each agency.*make available for public inspection in an electronic format/i.test(ruleText)) {
     return "Agencies have to put the listed materials online so the public can inspect them.";
   }
-  if (/^In making any record available to a person/i.test(source)) {
+  if (/^In making any record available to a person/i.test(ruleText)) {
     return "When possible, the agency has to give records in the format the requester asks for.";
   }
-  if (/^In responding .* request for records/i.test(source)) {
+  if (/^In responding .* request for records/i.test(ruleText)) {
     return "The agency has to make a reasonable effort to search electronic records without seriously disrupting its work.";
   }
-  if (/^No agency .* advance payment of any fee/i.test(source)) {
+  if (/^No agency .* advance payment of any fee/i.test(ruleText)) {
     return "An agency generally cannot demand payment up front, except for unpaid past fees or a request expected to cost more than $250.";
   }
-  if (/^Fees (?:shall|must) be limited .* commercial use/i.test(source)) {
+  if (/^Fees (?:shall|must) be limited .* commercial use/i.test(ruleText)) {
     return "For commercial requests, fees can cover reasonable costs for searching, copying, and reviewing records.";
   }
-  if (/^For any request not described .* fees (?:shall|must) be limited/i.test(source)) {
+  if (/^For any request not described .* fees (?:shall|must) be limited/i.test(ruleText)) {
     return "For other requests, fees can cover only reasonable search and copying costs.";
   }
-  if (/^If the costs of routine collection and processing/i.test(source)) {
+  if (/^If the costs of routine collection and processing/i.test(ruleText)) {
     return "The agency does not have to collect a fee when collecting it would cost as much as, or more than, the fee itself.";
   }
-  if (/^For any request described .* first two hours of search time/i.test(source)) {
+  if (/^For any request described .* first two hours of search time/i.test(ruleText)) {
     return "Certain noncommercial requests do not have to pay for the first two hours of searching or the first 100 copied pages.";
   }
-  if (/^Nothing in this subparagraph (?:shall|must) supersede/i.test(source)) {
+  if (/^Nothing in this subparagraph (?:shall|must) supersede/i.test(ruleText)) {
     return "Another law can set a different fee rule for particular kinds of records.";
   }
-  if (/^In any action by a requester regarding the waiver of fees/i.test(source)) {
+  if (/^In any action by a requester regarding the waiver of fees/i.test(ruleText)) {
     return "A court decides a fee-waiver dispute from the beginning, using the information the agency had at the time.";
   }
-  if (/^If a court has determined that exceptional circumstances exist/i.test(source)) {
+  if (/^If a court has determined that exceptional circumstances exist/i.test(ruleText)) {
     return "A court can excuse a missed deadline for the time stated in its order when unusual problems make that necessary.";
   }
-  if (source.length > 260) {
-    if (/\bfee|charge\b/i.test(source)) return "This line sets detailed limits on when an agency can charge fees and when those charges must be reduced or waived.";
-    if (/\brecords?\b/i.test(source)) return "This line sets detailed conditions for providing records, including timing, format, or exceptions.";
-    if (/\bcourt\b/i.test(source)) return "This line explains how a court handles a dispute under this rule.";
-    if (/\bagency\b/i.test(source)) return "This line gives agencies detailed duties, limits, or exceptions under this rule.";
+  if (ruleText.length > 260) {
+    if (/\bfee|charge\b/i.test(ruleText)) return "This line sets detailed limits on when an agency can charge fees and when those charges must be reduced or waived.";
+    if (/\brecords?\b/i.test(ruleText)) return "This line sets detailed conditions for providing records, including timing, format, or exceptions.";
+    if (/\bcourt\b/i.test(ruleText)) return "This line explains how a court handles a dispute under this rule.";
+    if (/\bagency\b/i.test(ruleText)) return "This line gives agencies detailed duties, limits, or exceptions under this rule.";
   }
   return undefined;
 }
