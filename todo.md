@@ -74,9 +74,10 @@
 - [x] Add regression tests for sentence-level common-English output and verify the rewritten guide through the live Vercel mutation.
 - [x] Exclude editorial source-history lines from the line-by-line plain-English guide so every displayed guide line explains statutory text.
 - [x] Explain every displayed statutory line in the Vercel everyday-English guide rather than limiting the guide to the first five lines.
-- [ ] Add full-line coverage tests and verify the expanded guide through the live Vercel mutation.
+- [x] Add full-line coverage tests and verify the expanded guide through the live Vercel mutation.
 - [x] Exclude amendment-history fragments from multi-line guide output and link each explanation to its corresponding statutory source line.
 - [x] Restate recurring statutory grammar and definition clauses in everyday English instead of repeating their formal source wording.
 - [x] Ensure source-format variation cannot leave the first statutory-construction line in raw formal language.
-- [ ] Verify the deployed guide restates Line 1 of 1 U.S.C. § 1 in everyday English after the source-format matcher repair, then save a synchronized checkpoint.
+- [x] Verify the deployed guide restates Line 1 of 1 U.S.C. § 1 in everyday English after the source-format matcher repair, then save a synchronized checkpoint.
+- [ ] Save a synchronized checkpoint after the verified live Vercel response confirms the first statutory line is in everyday English.
 - [x] Match the official source’s “unless the context indicates otherwise” wording so the first construction-rule line receives its everyday-English restatement.
