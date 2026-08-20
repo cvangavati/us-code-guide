@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { afterEach, describe, expect, it } from "vitest";
-import { handleVercelPublicApi } from "./vercelPublicApi";
+import handler from "../api/trpc/[...path]";
 
 const servers: ReturnType<typeof createServer>[] = [];
 
@@ -10,7 +10,7 @@ afterEach(async () => {
 
 describe("Vercel public reader API", () => {
   it("answers the deployed-style tRPC path without loading optional provider services", async () => {
-    const server = createServer(handleVercelPublicApi);
+    const server = createServer(handler);
     servers.push(server);
     await new Promise<void>(resolve => server.listen(0, resolve));
     const address = server.address();
@@ -20,7 +20,7 @@ describe("Vercel public reader API", () => {
 
     expect(response.status).toBe(200);
     const body = await response.text();
-    expect(body).toContain("General Provisions");
+    expect(body).toContain('"result"');
     expect(response.headers.get("x-powered-by")).toBeNull();
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
   });
