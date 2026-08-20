@@ -120,6 +120,73 @@ type PlainEnglishGuideDraft = Omit<PlainEnglishGuide, "label" | "generated" | "t
   trace?: PlainEnglishGuide["trace"];
 };
 
+function completePlainSentence(text: string) {
+  const cleaned = text.replace(/^[\s;,:-]+|[\s;,:-]+$/g, "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "This line sets part of the rule for this section.";
+  const withCapital = `${cleaned.charAt(0).toUpperCase()}${cleaned.slice(1)}`;
+  return /[.!?]$/.test(withCapital) ? withCapital : `${withCapital}.`;
+}
+
+function managedEverydayWords(text: string) {
+  return text
+    .replace(/\bequivalent subdivision of a State or Territory\b/gi, "similar local government area in a state or territory")
+    .replace(/\bfor purposes of this (?:chapter|subchapter|section)\b/gi, "when this part of the law uses")
+    .replace(/\bshall not\b/gi, "is not allowed to")
+    .replace(/\bmay not\b/gi, "is not allowed to")
+    .replace(/\bshall\b/gi, "has to")
+    .replace(/\bmust\b/gi, "has to")
+    .replace(/\bmay\b/gi, "is allowed to")
+    .replace(/\bunless\b/gi, "except when")
+    .replace(/\bsubject to\b/gi, "limited by")
+    .replace(/\bnotwithstanding\b/gi, "even if another rule says something different")
+    .replace(/\bhas jurisdiction\b/gi, "can handle cases about")
+    .replace(/\bpursuant to\b/gi, "under")
+    .replace(/\bprior to\b/gi, "before")
+    .replace(/\bsubsequent to\b/gi, "after")
+    .replace(/\bcommence\b/gi, "start")
+    .replace(/\bterminate\b/gi, "end")
+    .replace(/\bobtain\b/gi, "get")
+    .replace(/\bsubmit\b/gi, "send")
+    .replace(/\bprovide\b/gi, "give")
+    .replace(/\bthereof\b/gi, "of it")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function managedFallbackTranslation(source: string) {
+  const normalized = source.replace(/\s+/g, " ").trim();
+  const definition = normalized.match(/[“"]([^”"]+)[”"]\s+(includes|means)\s+([^.;]+)/i) ?? normalized.match(/\b(?:word|term)\s+([A-Za-z][A-Za-z -]{0,70})\s+(includes|means)\s+([^.;]+)/i);
+  if (definition) {
+    const [, term, verb, meaning] = definition;
+    const plainMeaning = completePlainSentence(managedEverydayWords(meaning)).replace(/[.!?]$/, "");
+    const embeddedMeaning = `${plainMeaning.charAt(0).toLowerCase()}${plainMeaning.slice(1)}`;
+    return verb.toLowerCase() === "includes"
+      ? `When this law says “${term.trim()},” it also counts ${embeddedMeaning}.`
+      : `Here, “${term.trim()}” has a special meaning: ${embeddedMeaning}.`;
+  }
+
+  const plain = managedEverydayWords(normalized)
+    .replace(/^\s*\(?[a-z0-9]+\)?\s*[.)-]\s*/i, "")
+    .replace(/^there is hereby established\s+/i, "this law creates ")
+    .replace(/^it shall be unlawful for\s+/i, "it is against the law for ")
+    .replace(/^nothing in this (?:chapter|subchapter|section) shall be construed to\s+/i, "this part of the law does not ")
+    .replace(/^the purpose of this (?:chapter|subchapter|section) is to\s+/i, "this part of the law is meant to ")
+    .replace(/^the provisions of this (?:chapter|subchapter|section) apply to\s+/i, "the rules in this part apply to ")
+    .replace(/^this (?:chapter|subchapter|section) applies to\s+/i, "this rule covers ");
+  return `In everyday terms, ${completePlainSentence(plain)}`;
+}
+
+function containsLongSourcePhrase(source: string, explanation: string) {
+  const sourceWords = source.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+  const explanationWords = explanation.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+  if (sourceWords.length < 6 || explanationWords.length < 6) return false;
+  const explanationText = ` ${explanationWords.join(" ")} `;
+  for (let index = 0; index <= sourceWords.length - 6; index += 1) {
+    if (explanationText.includes(` ${sourceWords.slice(index, index + 6).join(" ")} `)) return true;
+  }
+  return false;
+}
+
 export function normalizePlainEnglishGuide(
   raw: PlainEnglishGuideDraft,
   officialText: string[]
@@ -128,6 +195,12 @@ export function normalizePlainEnglishGuide(
   const watchFor = raw.watchFor.slice(0, 4);
   const suppliedTrace = raw.trace;
   const watchForParagraphs = (suppliedTrace?.watchForParagraphs ?? []).map((values: number[]) => normalizeParagraphReferences(values, total));
+  const keyPoints = officialText.map((sourceLine, index) => {
+    const candidate = raw.keyPoints[index]?.trim();
+    return candidate && !containsLongSourcePhrase(sourceLine, candidate)
+      ? candidate
+      : managedFallbackTranslation(sourceLine);
+  });
   const needsQualifierFlag = officialText.some(containsStatutoryQualifier);
   const mentionsQualification = watchFor.some(item => /\b(condition|exception|definition|limit|unless|if|scope|not every)\b/i.test(item));
   if (needsQualifierFlag && !mentionsQualification) {
@@ -137,12 +210,14 @@ export function normalizePlainEnglishGuide(
 
   return {
     label: "Plain-English guide — not legal advice",
-    summary: raw.summary,
-    keyPoints: raw.keyPoints.slice(0, 5),
+    summary: raw.summary && !containsLongSourcePhrase(officialText[0] ?? "", raw.summary)
+      ? raw.summary
+      : managedFallbackTranslation(officialText[0] ?? ""),
+    keyPoints,
     watchFor,
     trace: {
       summaryParagraphs: normalizeParagraphReferences(suppliedTrace?.summaryParagraphs, total),
-      keyPointParagraphs: raw.keyPoints.slice(0, 5).map((_, index) => normalizeParagraphReferences(suppliedTrace?.keyPointParagraphs?.[index], total)),
+      keyPointParagraphs: keyPoints.map((_, index) => [index + 1]),
       watchForParagraphs,
     },
     generated: true,
@@ -350,15 +425,15 @@ export async function makePlainEnglishGuide(section: CodeSection): Promise<Plain
   const { invokeLLM } = await import("./_core/llm");
   const response = await invokeLLM({
     model: "gpt-5-mini",
-    maxTokens: 900,
+    maxTokens: 5000,
     messages: [
       {
         role: "system",
-        content: "You write restrained, neutral reading aids for federal statutory text. You are not a lawyer and must not give advice, tell a reader what they should do, speculate, promise an outcome, or omit limiting language. Keep each point short, use everyday American English, and identify qualifications that a reader should notice. Do not restate the statutory text verbatim.",
+        content: "You translate federal statutory text for an everyday American reader. You are not a lawyer and must not give advice, tell a reader what they should do, speculate, promise an outcome, or omit limiting language. Create one key point for every displayed source paragraph, in the same order, and tie each key point to its matching paragraph. Explain what the line does in ordinary life: who it affects, what happens, and any condition or exception. Use short everyday American English. Do not merely swap a few legal words, retain the source sentence structure, or reuse six or more consecutive source words. Keep names, numbers, defined terms, and limits accurate.",
       },
       {
         role: "user",
-        content: `Create a plain-English reading guide for ${section.title} U.S.C. § ${section.section}, titled ${section.heading}. Official text follows:\n\n${section.officialText.join("\n\n").slice(0, 12_000)}`,
+        content: `Create a plain-English reading guide for ${section.title} U.S.C. § ${section.section}, titled ${section.heading}. Return exactly ${section.officialText.length} key points—one practical explanation for each numbered source paragraph below, not a summary of only some lines. Official text follows:\n\n${section.officialText.map((paragraph, index) => `Source line ${index + 1}: ${paragraph}`).join("\n\n").slice(0, 12_000)}`,
       },
     ],
     outputSchema: {
@@ -368,13 +443,13 @@ export async function makePlainEnglishGuide(section: CodeSection): Promise<Plain
         type: "object",
         properties: {
           summary: { type: "string" },
-          keyPoints: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 5 },
+          keyPoints: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 45 },
           watchFor: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
           trace: {
             type: "object",
             properties: {
               summaryParagraphs: { type: "array", items: { type: "integer" }, minItems: 1, maxItems: 3 },
-              keyPointParagraphs: { type: "array", items: { type: "array", items: { type: "integer" }, minItems: 1, maxItems: 3 }, minItems: 2, maxItems: 5 },
+              keyPointParagraphs: { type: "array", items: { type: "array", items: { type: "integer" }, minItems: 1, maxItems: 3 }, minItems: 1, maxItems: 45 },
               watchForParagraphs: { type: "array", items: { type: "array", items: { type: "integer" }, minItems: 1, maxItems: 3 }, minItems: 1, maxItems: 4 },
             },
             required: ["summaryParagraphs", "keyPointParagraphs", "watchForParagraphs"],

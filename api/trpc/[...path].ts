@@ -257,6 +257,22 @@ function shortenSource(sentence: string, limit = 220) {
 function everydayWords(text: string) {
   return text
     .replace(/\bequivalent subdivision of a State or Territory\b/gi, "similar local government area in a state or territory")
+    .replace(/\bfor purposes of this (?:chapter|subchapter|section)\b/gi, "when this part of the law uses")
+    .replace(/\bfor the purposes of\b/gi, "when applying")
+    .replace(/\bis deemed to be\b/gi, "is treated as")
+    .replace(/\bshall be deemed\b/gi, "is treated")
+    .replace(/\bis authorized to\b/gi, "has permission to")
+    .replace(/\bhas jurisdiction\b/gi, "can handle cases about")
+    .replace(/\bpursuant to\b/gi, "under")
+    .replace(/\bprior to\b/gi, "before")
+    .replace(/\bsubsequent to\b/gi, "after")
+    .replace(/\bcommence\b/gi, "start")
+    .replace(/\bterminate\b/gi, "end")
+    .replace(/\bobtain\b/gi, "get")
+    .replace(/\bsubmit\b/gi, "send")
+    .replace(/\bprovide\b/gi, "give")
+    .replace(/\bwith respect to\b/gi, "about")
+    .replace(/\binsofar as\b/gi, "to the extent")
     .replace(/\bshall not\b/gi, "is not allowed to")
     .replace(/\bmay not\b/gi, "is not allowed to")
     .replace(/\bshall\b/gi, "has to")
@@ -269,6 +285,32 @@ function everydayWords(text: string) {
     .replace(/\bthereof\b/gi, "of it")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function completeSentence(text: string) {
+  const cleaned = text.replace(/^[\s;,:-]+|[\s;,:-]+$/g, "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "This line sets part of the rule for this section.";
+  const withCapital = `${cleaned.charAt(0).toUpperCase()}${cleaned.slice(1)}`;
+  return /[.!?]$/.test(withCapital) ? withCapital : `${withCapital}.`;
+}
+
+function practicalRestatement(source: string) {
+  const withoutLabel = source
+    .replace(/^\s*\(?[a-z0-9]+\)?\s*[.)-]\s*/i, "")
+    .replace(/^\s*(?:and|or|but)\s+/i, "");
+  const plain = everydayWords(withoutLabel)
+    .replace(/^there is hereby established\s+/i, "this law creates ")
+    .replace(/^it shall be unlawful for\s+/i, "it is against the law for ")
+    .replace(/^nothing in this (?:chapter|subchapter|section) shall be construed to\s+/i, "this part of the law does not ")
+    .replace(/^the purpose of this (?:chapter|subchapter|section) is to\s+/i, "this part of the law is meant to ")
+    .replace(/^the provisions of this (?:chapter|subchapter|section) apply to\s+/i, "the rules in this part apply to ")
+    .replace(/^this (?:chapter|subchapter|section) applies to\s+/i, "this rule covers ")
+    .replace(/\bperson or entity\b/gi, "person or organization")
+    .replace(/\bany individual\b/gi, "any person")
+    .replace(/\bsuch person\b/gi, "that person")
+    .replace(/\bthereof\b/gi, "of it");
+
+  return completeSentence(plain);
 }
 
 function explainLine(source: string) {
@@ -309,12 +351,13 @@ function explainLine(source: string) {
   const definition = source.match(/[“"]([^”"]+)[”"]\s+(includes|means)\s+([^.;]+)/i) ?? source.match(/\b(?:word|term)\s+([A-Za-z][A-Za-z -]{0,70})\s+(includes|means)\s+([^.;]+)/i);
   if (definition) {
     const [, term, verb, meaning] = definition;
-    const plainMeaning = everydayWords(meaning);
+    const plainMeaning = completeSentence(everydayWords(meaning)).replace(/[.!?]$/, "");
+    const embeddedMeaning = `${plainMeaning.charAt(0).toLowerCase()}${plainMeaning.slice(1)}`;
     return verb.toLowerCase() === "includes"
-      ? `“${term.trim()}” also covers ${plainMeaning}.`
-      : `“${term.trim()}” means ${plainMeaning}.`;
+      ? `When this law says “${term.trim()},” it also counts ${embeddedMeaning}.`
+      : `Here, “${term.trim()}” has a special meaning: ${embeddedMeaning}.`;
   }
-  return everydayWords(shortenSource(source, 240));
+  return `In everyday terms, ${practicalRestatement(shortenSource(source, 240))}`;
 }
 
 export function sourceGroundedGuide(section: { heading: string; officialText: string[]; officialBlocks?: OfficialBlock[] }) {

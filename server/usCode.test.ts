@@ -74,4 +74,41 @@ describe("U.S. Code content model", () => {
     expect(guide.watchFor[0]).toMatch(/conditions, exceptions, or limits/i);
     expect(guide.trace.watchForParagraphs[0]).toEqual([1]);
   });
+
+  it("keeps all provided line-by-line explanations instead of truncating the managed guide at five entries", () => {
+    const guide = normalizePlainEnglishGuide({
+      summary: "A short general rule.",
+      keyPoints: Array.from({ length: 7 }, (_, index) => `Everyday explanation ${index + 1}.`),
+      watchFor: ["A limit can change the general rule."],
+      trace: {
+        summaryParagraphs: [1],
+        keyPointParagraphs: Array.from({ length: 7 }, (_, index) => [index + 1]),
+        watchForParagraphs: [[1]],
+      },
+    }, Array.from({ length: 7 }, (_, index) => `Official source line ${index + 1}.`));
+
+    expect(guide.keyPoints).toHaveLength(7);
+    expect(guide.keyPoints[6]).toBe("Everyday explanation 7.");
+    expect(guide.trace.keyPointParagraphs[6]).toEqual([7]);
+  });
+
+  it("replaces a source-like model answer and fills any missing lines with common-person translations", () => {
+    const sourceLines = [
+      "For the purposes of this section, the term “county” includes the District of Columbia and Puerto Rico.",
+      "The Secretary shall submit a report to Congress each year.",
+    ];
+    const guide = normalizePlainEnglishGuide({
+      summary: sourceLines[0],
+      keyPoints: [sourceLines[0]],
+      watchFor: ["A limit can change the general rule."],
+      trace: { summaryParagraphs: [1], keyPointParagraphs: [[1]], watchForParagraphs: [[1]] },
+    }, sourceLines);
+
+    expect(guide.summary).toBe("When this law says “county,” it also counts the District of Columbia and Puerto Rico.");
+    expect(guide.keyPoints).toEqual([
+      "When this law says “county,” it also counts the District of Columbia and Puerto Rico.",
+      "In everyday terms, The Secretary has to send a report to Congress each year.",
+    ]);
+    expect(guide.trace.keyPointParagraphs).toEqual([[1], [2]]);
+  });
 });

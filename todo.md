@@ -81,3 +81,7 @@
 - [x] Verify the deployed guide restates Line 1 of 1 U.S.C. § 1 in everyday English after the source-format matcher repair, then save a synchronized checkpoint.
 - [x] Save a synchronized checkpoint after the verified live Vercel response confirms the first statutory line is in everyday English.
 - [x] Match the official source’s “unless the context indicates otherwise” wording so the first construction-rule line receives its everyday-English restatement.
+- [x] Replace source-like guide paraphrases with genuine everyday-reader translations that explain each statutory line’s practical meaning.
+- [x] Add regression coverage that rejects near-copy statutory wording and checks common-person translation quality.
+- [ ] Verify the revised guide locally and through the deployed Vercel reader, then save a checkpoint.
+- [x] Enforce and test complete, non-copying line coverage for the managed language-model guide path rather than relying on prompt wording alone.
