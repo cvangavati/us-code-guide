@@ -60,8 +60,13 @@ function isSourceHistoryLine(line: string) {
   return /^(?:[;(]\s*)?(?:[A-Z][a-z]+\.?\s+\d{1,2},\s+\d{4},\s+ch\.|Pub\.\s*L\.|Act\s+of\s+[A-Z][a-z]+\s+\d{1,2},\s+\d{4}|§\d+(?:\([a-z0-9]+\))?,\s*[A-Z][a-z]+\.?\s+\d{1,2},\s+\d{4},\s*\d+\s+Stat\.)/i.test(line);
 }
 
+function trimEditorialMaterial(html: string) {
+  const editorialStart = html.search(/(?:Editorial Notes|Historical and Revision Notes|References in Text|Prior Provisions|Codification|Effective Date|Short Title|\bDerivation\b|\bAmendments\b)/i);
+  return editorialStart >= 0 ? html.slice(0, editorialStart) : html;
+}
+
 function compactOfficialHtml(html: string) {
-  const cleaned = html
+  const cleaned = trimEditorialMaterial(html)
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
     .replace(/<!--[\s\S]*?-->/g, "")
@@ -70,7 +75,7 @@ function compactOfficialHtml(html: string) {
   const rawLines = decodeHtml(cleaned)
     .split(/\n+/)
     .map(line => line.replace(/\s+/g, " ").trim());
-  const editorialNotes = rawLines.findIndex(line => /editorial notes/i.test(line));
+  const editorialNotes = rawLines.findIndex(line => /(?:editorial notes|historical and revision notes|references in text|prior provisions|codification|effective date|short title|^derivation$|^amendments$)/i.test(line));
   return (editorialNotes >= 0 ? rawLines.slice(0, editorialNotes) : rawLines)
     .filter(line => line.length > 20)
     .filter(line => !/^(home|search & browse|downloads|understanding the code)$/i.test(line))
@@ -102,7 +107,7 @@ function cleanCell(html: string) {
 }
 
 function sourceBlocks(html: string, title: number, section: string): OfficialBlock[] {
-  const fragment = sectionFragment(html, title, section);
+  const fragment = trimEditorialMaterial(sectionFragment(html, title, section));
   const blocks: OfficialBlock[] = [];
   const tableMatcher = /<table\b[^>]*>[\s\S]*?<\/table>/gi;
   let cursor = 0;
@@ -313,6 +318,65 @@ function practicalRestatement(source: string) {
   return completeSentence(plain);
 }
 
+function practicalRuleExplanation(source: string) {
+  const normalized = source.replace(/\s+/g, " ").trim();
+  if (/^Each agency (?:shall|must) make available to the public information/i.test(normalized)) {
+    return "Federal agencies have to make the listed information available to the public.";
+  }
+  if (/^Each agency (?:shall|must) separately state and currently publish in the Federal Register/i.test(normalized)) {
+    return "Federal agencies have to keep a current public notice in the Federal Register explaining where they work, how they operate, and where people can get information.";
+  }
+  if (/^Descriptions of (?:its|the) central and field organization/i.test(normalized)) {
+    return "The public notice must explain where the agency operates, who people can contact, and how to get information.";
+  }
+  if (/^Statements of the general course and method/i.test(normalized)) {
+    return "The public notice must explain how the agency makes decisions and what procedures people can use.";
+  }
+  if (/^Rules of procedure, descriptions of forms/i.test(normalized)) {
+    return "The public notice must show the agency's procedures, available forms, and filing requirements.";
+  }
+  if (/^Substantive rules of general applicability/i.test(normalized)) {
+    return "The public notice must include the agency's rules, policies, and general interpretations.";
+  }
+  if (/^Each amendment, revision, or repeal/i.test(normalized)) {
+    return "Changes to those public materials must also be made public.";
+  }
+  if (/^Each agency.*make available for public inspection in an electronic format/i.test(normalized)) {
+    return "Agencies have to put the listed materials online so the public can inspect them.";
+  }
+  if (/^Final opinions, including concurring and dissenting opinions/i.test(normalized)) {
+    return "The public can see final decisions in cases, including opinions that agree or disagree.";
+  }
+  if (/^Those statements of policy and interpretations/i.test(normalized)) {
+    return "The public can see agency policies and interpretations that are not published in the Federal Register.";
+  }
+  if (/^Administrative staff manuals and instructions to staff/i.test(normalized)) {
+    return "The public can see staff manuals and instructions when they affect people outside the agency.";
+  }
+  if (/^Copies of all records/i.test(normalized)) {
+    return "The agency must make public copies of the records covered by this part of the rule.";
+  }
+  if (/^A general index of the records/i.test(normalized)) {
+    return "The agency must provide an index so people can find those records.";
+  }
+  if (/^In making any record available to a person/i.test(normalized)) {
+    return "When possible, the agency has to give records in the format the requester asks for.";
+  }
+  if (/^In responding .* request for records/i.test(normalized)) {
+    return "The agency has to make a reasonable effort to search electronic records without seriously disrupting its work.";
+  }
+  if (/^No agency .* advance payment of any fee/i.test(normalized)) {
+    return "An agency generally cannot demand payment up front, except for unpaid past fees or a request expected to cost more than $250.";
+  }
+  if (normalized.length > 260) {
+    if (/\bfee|charge\b/i.test(normalized)) return "This line sets detailed limits on when an agency can charge fees and when those charges must be reduced or waived.";
+    if (/\brecords?\b/i.test(normalized)) return "This line sets detailed conditions for providing records, including timing, format, or exceptions.";
+    if (/\bcourt\b/i.test(normalized)) return "This line explains how a court handles a dispute under this rule.";
+    if (/\bagency\b/i.test(normalized)) return "This line gives agencies detailed duties, limits, or exceptions under this rule.";
+  }
+  return undefined;
+}
+
 function explainLine(source: string) {
   const normalized = source.replace(/\s+/g, " ").trim();
   if (/In determining the meaning of any Act of Congress, (?:except when|unless) the context indicates otherwise/i.test(normalized)) {
@@ -348,6 +412,8 @@ function explainLine(source: string) {
   if (/^[“"]writing[”"] includes?/i.test(normalized)) {
     return "“Writing” can include printed, typed, copied, photographed, or other visual text.";
   }
+  const practicalRule = practicalRuleExplanation(normalized);
+  if (practicalRule) return practicalRule;
   const definition = source.match(/[“"]([^”"]+)[”"]\s+(includes|means)\s+([^.;]+)/i) ?? source.match(/\b(?:word|term)\s+([A-Za-z][A-Za-z -]{0,70})\s+(includes|means)\s+([^.;]+)/i);
   if (definition) {
     const [, term, verb, meaning] = definition;

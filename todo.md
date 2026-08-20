@@ -85,3 +85,8 @@
 - [x] Add regression coverage that rejects near-copy statutory wording and checks common-person translation quality.
 - [ ] Verify the revised guide locally and through the deployed Vercel reader, then save a checkpoint.
 - [x] Enforce and test complete, non-copying line coverage for the managed language-model guide path rather than relying on prompt wording alone.
+- [x] Exclude historical, revision, derivation, and editorial-note material from the displayed public statute and its guide.
+- [x] Replace generic source-like fallback wording for real statutory rules with practical common-person explanations.
+- [ ] Add real-section regression coverage for a substantive section, then re-verify the public Vercel guide and save the correction.
+- [x] Explicitly exclude standalone derivation and similar editorial headings in both parser paths, with dedicated managed and Vercel regression tests.
+- [ ] Re-check 5 U.S.C. § 552 on the deployed reader and refine any remaining source-like fallback wording before final delivery.

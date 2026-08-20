@@ -38,6 +38,22 @@ describe("U.S. Code content model", () => {
     ]);
   });
 
+  it("stops before historical and revision material instead of treating it as statutory text", () => {
+    const source = "<h3>§552. Public information</h3><p>Federal agencies must publish information for the public.</p><h4>Historical and Revision Notes</h4><p>June 11, 1946, ch. 324, 60 Stat. 238.</p><p>Derivation and codification details.</p>";
+    expect(compactOfficialHtml(source)).toEqual([
+      "§552. Public information",
+      "Federal agencies must publish information for the public.",
+    ]);
+  });
+
+  it("stops at a standalone derivation heading even when no historical-notes heading comes first", () => {
+    const source = "<h3>§552. Public information</h3><p>Federal agencies must publish information for the public.</p><h4>Derivation</h4><p>U.S. Code and Statutes at Large comparison.</p>";
+    expect(compactOfficialHtml(source)).toEqual([
+      "§552. Public information",
+      "Federal agencies must publish information for the public.",
+    ]);
+  });
+
   it("bounds an archive fallback to the requested section rather than loading the whole title into the reader", () => {
     const source = "<!-- documentid:18_1030 --><h3>§1030. Computer fraud</h3><p>First official paragraph for this section.</p><!-- documentid:18_1031 --><h3>§1031. Major fraud</h3><p>Different section.</p>";
     expect(extractGovInfoSection(source, 18, "1030")).toEqual([

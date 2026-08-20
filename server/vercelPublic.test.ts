@@ -1,13 +1,14 @@
 import { createServer } from "node:http";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import handler, { sourceGroundedGuide } from "../api/trpc/[...path]";
 import type { AppRouter } from "./routers";
 
 const servers: ReturnType<typeof createServer>[] = [];
 
 afterEach(async () => {
+  vi.unstubAllGlobals();
   await Promise.all(servers.splice(0).map(server => new Promise<void>(resolve => server.close(() => resolve()))));
 });
 
@@ -106,5 +107,39 @@ describe("Vercel public reader API", () => {
     expect(guide.keyPoints[0]).not.toContain("For the purposes of this section");
     expect(guide.keyPoints[1]).toBe("Line 2: In everyday terms, The Secretary has to send a report to Congress each year.");
     expect(guide.keyPoints[1]).not.toContain("shall submit");
+  });
+
+  it("excludes a standalone derivation heading and explains a substantive public-records rule in practical language", async () => {
+    const realFetch = globalThis.fetch;
+    vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url.startsWith("https://uscode.house.gov/")) {
+        return new Response(`
+          <h3>§99. Public records</h3>
+          <p>Each agency shall make available to the public information as follows.</p>
+          <p>Descriptions of its central and field organization and the established places at which the public may obtain information.</p>
+          <h4>Derivation</h4>
+          <p>U.S. Code and Statutes at Large comparison.</p>
+        `);
+      }
+      return realFetch(input, init);
+    }));
+    const server = createServer(handler);
+    servers.push(server);
+    await new Promise<void>(resolve => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("Expected a TCP server address");
+    const client = createTRPCClient<AppRouter>({
+      links: [httpBatchLink({ url: `http://127.0.0.1:${address.port}/api/trpc`, transformer: superjson })],
+    });
+
+    const guide = await client.usCode.explain.mutate({ title: 5, section: "99" });
+
+    expect(guide.keyPoints).toEqual([
+      "Line 1: Federal agencies have to make the listed information available to the public.",
+      "Line 2: The public notice must explain where the agency operates, who people can contact, and how to get information.",
+    ]);
+    expect(guide.keyPoints.join(" ")).not.toMatch(/derivation|U\.S\. Code and Statutes at Large/i);
+    expect(guide.keyPoints.join(" ")).not.toContain("Each agency shall make available");
   });
 });
