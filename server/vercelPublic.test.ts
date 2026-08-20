@@ -74,5 +74,6 @@ describe("Vercel public reader API", () => {
     expect(guide.keyPoints).toHaveLength(7);
     expect(guide.keyPoints[6]).toMatch(/^Line 7:/);
     expect(guide.trace.keyPointParagraphs).toHaveLength(7);
+    expect(guide.trace.keyPointParagraphs[6]).toEqual([7]);
   });
 });

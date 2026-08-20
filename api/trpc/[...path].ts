@@ -57,7 +57,7 @@ function decodeHtml(input: string) {
 }
 
 function isSourceHistoryLine(line: string) {
-  return /^\(?\s*(?:[A-Z][a-z]+\.?\s+\d{1,2},\s+\d{4},\s+ch\.|Pub\.\s*L\.|Act\s+of\s+[A-Z][a-z]+\s+\d{1,2},\s+\d{4})/i.test(line);
+  return /^(?:[;(]\s*)?(?:[A-Z][a-z]+\.?\s+\d{1,2},\s+\d{4},\s+ch\.|Pub\.\s*L\.|Act\s+of\s+[A-Z][a-z]+\s+\d{1,2},\s+\d{4}|§\d+(?:\([a-z0-9]+\))?,\s*[A-Z][a-z]+\.?\s+\d{1,2},\s+\d{4},\s*\d+\s+Stat\.)/i.test(line);
 }
 
 function compactOfficialHtml(html: string) {
@@ -288,6 +288,7 @@ export function sourceGroundedGuide(section: { heading: string; officialText: st
   const sentences = sourceSentences(paragraphs);
   const firstLine = paragraphs[0] ?? `This section addresses ${section.heading}.`;
   const conditionalSentence = sentences.find(sentence => /\b(unless|except|if|only if|subject to|provided that|notwithstanding)\b/i.test(sentence));
+  const conditionalLine = Math.max(1, paragraphs.findIndex(paragraph => conditionalSentence ? paragraph.includes(conditionalSentence) : false) + 1);
   const table = section.officialBlocks?.find(block => block.type === "table");
   const keyPoints = paragraphs.map((paragraph, index) => `Line ${index + 1}: ${explainLine(paragraph)}`);
 
@@ -308,8 +309,8 @@ export function sourceGroundedGuide(section: { heading: string; officialText: st
     watchFor,
     trace: {
       summaryParagraphs: [1],
-      keyPointParagraphs: keyPoints.map(() => [1]),
-      watchForParagraphs: watchFor.map(() => [1]),
+      keyPointParagraphs: keyPoints.map((_, index) => [Math.min(index + 1, Math.max(1, paragraphs.length))]),
+      watchForParagraphs: [conditionalSentence ? [conditionalLine] : [1], [1]],
     },
     generated: true,
   };

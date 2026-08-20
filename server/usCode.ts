@@ -73,7 +73,7 @@ function decodeHtml(input: string) {
 }
 
 function isSourceHistoryLine(line: string) {
-  return /^\(?\s*(?:[A-Z][a-z]+\.?\s+\d{1,2},\s+\d{4},\s+ch\.|Pub\.\s*L\.|Act\s+of\s+[A-Z][a-z]+\s+\d{1,2},\s+\d{4})/i.test(line);
+  return /^(?:[;(]\s*)?(?:[A-Z][a-z]+\.?\s+\d{1,2},\s+\d{4},\s+ch\.|Pub\.\s*L\.|Act\s+of\s+[A-Z][a-z]+\s+\d{1,2},\s+\d{4}|§\d+(?:\([a-z0-9]+\))?,\s*[A-Z][a-z]+\.?\s+\d{1,2},\s+\d{4},\s*\d+\s+Stat\.)/i.test(line);
 }
 
 export function compactOfficialHtml(html: string) {
