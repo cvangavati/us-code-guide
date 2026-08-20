@@ -58,8 +58,9 @@ describe("Vercel public reader API", () => {
 
     expect(guide.label).toBe("Plain-English guide — not legal advice");
     expect(guide.generated).toBe(true);
-    expect(guide.summary).toMatch(/definition rule/i);
     expect(guide.summary).toMatch(/county/i);
-    expect(guide.keyPoints.join(" ")).toMatch(/includes/i);
+    expect(guide.summary).toMatch(/also covers/i);
+    expect(guide.keyPoints[0]).toMatch(/^Line 1:/);
+    expect(guide.keyPoints.join(" ")).not.toMatch(/read that sentence|should|mandatory wording/i);
   }, 30_000);
 });

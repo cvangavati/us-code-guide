@@ -249,48 +249,56 @@ function shortenSource(sentence: string, limit = 220) {
   return sentence.length <= limit ? sentence : `${sentence.slice(0, limit - 1).trimEnd()}…`;
 }
 
+function everydayWords(text: string) {
+  return text
+    .replace(/\bequivalent subdivision of a State or Territory\b/gi, "similar local government area in a state or territory")
+    .replace(/\bshall not\b/gi, "is not allowed to")
+    .replace(/\bmay not\b/gi, "is not allowed to")
+    .replace(/\bshall\b/gi, "has to")
+    .replace(/\bmust\b/gi, "has to")
+    .replace(/\bmay\b/gi, "is allowed to")
+    .replace(/\bunless\b/gi, "except when")
+    .replace(/\bsubject to\b/gi, "limited by")
+    .replace(/\bnotwithstanding\b/gi, "even if another rule says something different")
+    .replace(/\bperson or entity\b/gi, "person or organization")
+    .replace(/\bthereof\b/gi, "of it")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function explainLine(source: string) {
+  const definition = source.match(/[“"]([^”"]+)[”"]\s+(includes|means)\s+([^.;]+)/i) ?? source.match(/\b(?:word|term)\s+([A-Za-z][A-Za-z -]{0,70})\s+(includes|means)\s+([^.;]+)/i);
+  if (definition) {
+    const [, term, verb, meaning] = definition;
+    const plainMeaning = everydayWords(meaning);
+    return verb.toLowerCase() === "includes"
+      ? `“${term.trim()}” also covers ${plainMeaning}.`
+      : `“${term.trim()}” means ${plainMeaning}.`;
+  }
+  return everydayWords(shortenSource(source, 240));
+}
+
 function sourceGroundedGuide(section: Awaited<ReturnType<typeof getOfficialSection>>) {
   const paragraphs = section.officialText.filter(Boolean);
-  const text = paragraphs.join(" ");
   const sentences = sourceSentences(paragraphs);
-  const firstSentence = sentences[0] ?? `This section addresses ${section.heading}.`;
-  const quotedDefinition = text.match(/[“"]([^”"]+)[”"]\s+(includes|means)\s+([^.;]+)/i) ?? text.match(/\b(?:word|term)\s+([A-Za-z][A-Za-z -]{0,70})\s+(includes|means)\s+([^.;]+)/i);
+  const firstLine = paragraphs[0] ?? `This section addresses ${section.heading}.`;
   const conditionalSentence = sentences.find(sentence => /\b(unless|except|if|only if|subject to|provided that|notwithstanding)\b/i.test(sentence));
-  const operativeSentence = sentences.find(sentence => /\b(shall|must|may|may not|shall not|is prohibited|is required)\b/i.test(sentence));
   const table = section.officialBlocks?.find(block => block.type === "table");
-  const keyPoints: string[] = [];
-
-  let summary: string;
-  if (quotedDefinition) {
-    const [, term, verb, meaning] = quotedDefinition;
-    summary = `This is a definition rule. When federal law uses “${term.trim()},” this section says it ${verb.toLowerCase()} ${meaning.trim()}. In everyday terms, the law treats that listed thing as part of the defined word.`;
-    keyPoints.push(`The word “${verb.toLowerCase()}” broadens the category: the listed example is counted within “${term.trim()},” not treated as a separate category.`);
-    if (/\bother equivalent\b|and so forth/i.test(meaning)) keyPoints.push(`The phrase “${meaning.trim()}” keeps the definition from being limited to one exact local label.`);
-  } else {
-    summary = `In plain English, this section begins by saying: “${shortenSource(firstSentence)}” The rest of the displayed language explains the rule’s details and limits.`;
-    keyPoints.push(`The key statutory wording is “${shortenSource(operativeSentence ?? firstSentence, 180)}” Read that sentence together with the surrounding passages.`);
-  }
-
-  if (operativeSentence) {
-    const word = operativeSentence.match(/\b(shall not|may not|shall|must|may)\b/i)?.[1]?.toLowerCase();
-    if (word === "shall" || word === "must") keyPoints.push(`“${word}” is mandatory wording: the law is stating a requirement, not merely an option.`);
-    if (word === "shall not" || word === "may not") keyPoints.push(`“${word}” is restrictive wording: the law says the described action is not permitted.`);
-    if (word === "may") keyPoints.push(`“may” signals permission or discretion. It does not by itself make the action mandatory.`);
-  }
+  const keyPoints = paragraphs.slice(0, 5).map((paragraph, index) => `Line ${index + 1}: ${explainLine(paragraph)}`);
 
   if (table) {
     const headerWords = table.headers.slice(0, 3).join("; ");
-    keyPoints.push(`The original document includes a statutory table${headerWords ? ` with headings such as “${headerWords}”` : ""}. The table is part of the official rule, so read its row and column labels with the surrounding text.`);
+    keyPoints.push(`Table: ${headerWords ? `the headings “${headerWords}” show what each column is about` : "the rows and columns organize the listed information"}.`);
   }
-  if (keyPoints.length < 2) keyPoints.push(`The section uses ${paragraphs.length === 1 ? "one displayed passage" : `${paragraphs.length} displayed passages`}; the wording in each passage may qualify the others.`);
+  if (keyPoints.length < 2) keyPoints.push("This is the only displayed line in this section.");
 
   const watchFor = conditionalSentence
-    ? [`This limitation appears in the source: “${shortenSource(conditionalSentence, 180)}”`, "This guide explains wording in the displayed section; it does not determine how the rule applies to a particular person or situation."]
-    : ["Definitions, exceptions, and cross-references elsewhere in the Code can change how a word or rule applies.", "This guide explains wording in the displayed section; it does not determine how the rule applies to a particular person or situation."];
+    ? [`One line adds a limit: ${explainLine(conditionalSentence)}`, "This version explains the words in this section. It does not decide a personal legal question."]
+    : ["Another section of the Code can give a word a different meaning.", "This version explains the words in this section. It does not decide a personal legal question."];
 
   return {
     label: "Plain-English guide — not legal advice" as const,
-    summary,
+    summary: explainLine(firstLine),
     keyPoints: keyPoints.slice(0, 5),
     watchFor,
     trace: {

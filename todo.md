@@ -70,3 +70,5 @@
 - [x] Add regression coverage for source-table rendering and Vercel guide-generation responses, then verify the public build.
 - [x] Make the Vercel guide explain actual defined terms, operative verbs, conditions, and source-table structure from the displayed statute.
 - [x] Add source-specific guide tests and verify the improved guide through the live Vercel mutation.
+- [x] Replace guide instructions and formal terminology with non-instructional, line-by-line everyday-English explanations of the displayed statutory text.
+- [ ] Add regression tests for sentence-level common-English output and verify the rewritten guide through the live Vercel mutation.
