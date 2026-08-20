@@ -1,4 +1,3 @@
-import { invokeLLM } from "./_core/llm";
 import type { CodeSection, PlainEnglishGuide } from "../shared/usCode";
 
 const OLRC_VIEW_URL = "https://uscode.house.gov/view.xhtml";
@@ -287,6 +286,7 @@ export async function makePlainEnglishGuide(section: CodeSection): Promise<Plain
   if (cached) return cached;
   if (section.officialText.length === 0) throw new Error("Official section text is unavailable for explanation");
 
+  const { invokeLLM } = await import("./_core/llm");
   const response = await invokeLLM({
     model: "gpt-5-mini",
     maxTokens: 900,

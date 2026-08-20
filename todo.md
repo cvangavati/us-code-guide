@@ -60,3 +60,4 @@
 - [x] Add a compatible Vercel deployment configuration without exposing server-side secrets.
 - [ ] Verify the deployment build and document the Vercel configuration requirements, then save a synchronized checkpoint.
 - [ ] Resolve the Vercel `/api/trpc` function startup failure and verify a live non-fallback section response.
+- [x] Provide a Vercel-scoped public tRPC router for official-text and title-index retrieval without importing optional Manus OAuth, database, storage, or generation services.

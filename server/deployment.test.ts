@@ -16,6 +16,6 @@ describe("Vercel deployment configuration", () => {
     expect(config.buildCommand).toBe("pnpm run build:client");
     expect(config.outputDirectory).toBe("dist/public");
     expect(config.rewrites).toContainEqual({ source: "/read/:title/:section", destination: "/index.html" });
-    expect(existsSync("api/[...path].ts")).toBe(true);
+    expect(existsSync("api/trpc/[...path].ts")).toBe(true);
   });
 });
