@@ -68,6 +68,8 @@ The supported deployment path is the project’s managed hosting, which keeps it
 
 The included `vercel.json` is an external-host compatibility layer. It runs `pnpm run build:client`, serves only `dist/public`, preserves reader URLs such as `/read/18/1030`, and routes browser-facing official-text requests under `/api/trpc/*` to a self-contained Vercel Function at `api/trpc/[...path].ts`. This avoids depending on unbundled server modules in Vercel’s function runtime. In Vercel, use the repository root and do not override the Output Directory to `dist`; the configuration sets it to `dist/public` deliberately.
 
+If a public official-text request fails, the reader preserves the requested citation and displays a clear recovery panel with a retry control and a direct official-source link. It does not leave readers in an indefinite loading state.
+
 > Do not copy Manus-managed environment values or keys into another host. Browser-local reading lists work without a database. The official-text reader uses public government sources, while provider-backed plain-English generation and Manus OAuth/storage routes remain intentionally outside the lightweight Vercel API. They require separately configured, Vercel-compatible server-side services if you intend to use those optional routes outside managed hosting.
 
 ## Future improvements

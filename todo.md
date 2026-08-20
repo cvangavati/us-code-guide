@@ -58,8 +58,10 @@
 - [x] Verify the hardened headers and absence of framework fingerprinting on a live `/api/trpc` response.
 - [x] Diagnose why the Vercel deployment serves the server bundle instead of the client application.
 - [x] Add a compatible Vercel deployment configuration without exposing server-side secrets.
-- [ ] Verify the deployment build and document the Vercel configuration requirements, then save a synchronized checkpoint.
-- [ ] Resolve the Vercel `/api/trpc` function startup failure and verify a live non-fallback section response.
+- [x] Verify the deployment build and document the Vercel configuration requirements, then save a synchronized checkpoint.
+- [x] Resolve the Vercel `/api/trpc` function startup failure and verify a live non-fallback section response.
 - [x] Provide a Vercel-scoped public tRPC router for official-text and title-index retrieval without importing optional Manus OAuth, database, storage, or generation services.
-- [ ] Restore Vercel section retrieval for reader paths and prevent an empty reader state if the public API is unavailable.
-- [ ] Restore Vercel chapter and section-index retrieval so the external reader does not remain in a perpetual preview-loading state.
+- [x] Restore Vercel section retrieval for reader paths and prevent an empty reader state if the public API is unavailable.
+- [x] Restore Vercel chapter and section-index retrieval so the external reader does not remain in a perpetual preview-loading state.
+- [x] Add an explicit, actionable reader state for failed official-section API requests so an outage never appears as an indefinite loading or blank reader.
+- [x] Add rendered coverage for a failed section request and verify the reader exposes recovery actions instead of an empty state.

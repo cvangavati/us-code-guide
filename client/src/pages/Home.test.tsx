@@ -28,7 +28,7 @@ const section: CodeSection = {
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     usCode: {
-      section: { useQuery: () => ({ data: section, isLoading: false, isFetching: false }) },
+      section: { useQuery: () => window.location.pathname === "/read/18/404" ? ({ data: undefined, isLoading: false, isFetching: false, isError: true, refetch: vi.fn() }) : ({ data: section, isLoading: false, isFetching: false, isError: false, refetch: vi.fn() }) },
       titleSections: { useQuery: () => ({ data: [{ section: "1030", heading: "Computer fraud" }], isFetching: false }) },
       explain: { useMutation: () => ({ data: undefined, isPending: false, mutate: vi.fn() }) },
     },
@@ -161,5 +161,13 @@ describe("reader interactions", () => {
     expect(screen.getAllByText("Words denoting number, gender, and so forth").length).toBeGreaterThan(1);
     await user.click(screen.getByRole("button", { name: "Clear history" }));
     expect(screen.getByText("Sections you open will appear here, up to the 12 most recent.")).toBeTruthy();
+  });
+
+  it("shows recovery actions instead of an indefinite reader state when the official-section request fails", () => {
+    window.history.pushState({}, "", "/read/18/404");
+    render(<Home />);
+    expect(screen.getByRole("alert").textContent).toContain("We could not load this official section right now.");
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open official source" }).getAttribute("href")).toContain("title18-section404");
   });
 });
