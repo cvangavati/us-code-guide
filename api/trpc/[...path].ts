@@ -341,6 +341,9 @@ function practicalRuleExplanation(source: string) {
   if (/^Each amendment, revision, or repeal/i.test(normalized)) {
     return "Changes to those public materials must also be made public.";
   }
+  if (/^Except to the extent that a person has actual and timely notice/i.test(normalized)) {
+    return "An unpublished rule generally cannot be used against someone who did not receive timely notice of it.";
+  }
   if (/^Each agency.*make available for public inspection in an electronic format/i.test(normalized)) {
     return "Agencies have to put the listed materials online so the public can inspect them.";
   }
@@ -367,6 +370,27 @@ function practicalRuleExplanation(source: string) {
   }
   if (/^No agency .* advance payment of any fee/i.test(normalized)) {
     return "An agency generally cannot demand payment up front, except for unpaid past fees or a request expected to cost more than $250.";
+  }
+  if (/^Fees (?:shall|must) be limited .* commercial use/i.test(normalized)) {
+    return "For commercial requests, fees can cover reasonable costs for searching, copying, and reviewing records.";
+  }
+  if (/^For any request not described .* fees (?:shall|must) be limited/i.test(normalized)) {
+    return "For other requests, fees can cover only reasonable search and copying costs.";
+  }
+  if (/^If the costs of routine collection and processing/i.test(normalized)) {
+    return "The agency does not have to collect a fee when collecting it would cost as much as, or more than, the fee itself.";
+  }
+  if (/^For any request described .* first two hours of search time/i.test(normalized)) {
+    return "Certain noncommercial requests do not have to pay for the first two hours of searching or the first 100 copied pages.";
+  }
+  if (/^Nothing in this subparagraph (?:shall|must) supersede/i.test(normalized)) {
+    return "Another law can set a different fee rule for particular kinds of records.";
+  }
+  if (/^In any action by a requester regarding the waiver of fees/i.test(normalized)) {
+    return "A court decides a fee-waiver dispute from the beginning, using the information the agency had at the time.";
+  }
+  if (/^If a court has determined that exceptional circumstances exist/i.test(normalized)) {
+    return "A court can excuse a missed deadline for the time stated in its order when unusual problems make that necessary.";
   }
   if (normalized.length > 260) {
     if (/\bfee|charge\b/i.test(normalized)) return "This line sets detailed limits on when an agency can charge fees and when those charges must be reduced or waived.";
@@ -421,7 +445,7 @@ function explainLine(source: string) {
     const embeddedMeaning = `${plainMeaning.charAt(0).toLowerCase()}${plainMeaning.slice(1)}`;
     return verb.toLowerCase() === "includes"
       ? `Here, “${term.trim()}” is used more broadly than its everyday label. It can cover ${embeddedMeaning}.`
-      : `Here, “${term.trim()}” is given a special definition. It refers to ${embeddedMeaning}.`;
+      : `Here, “${term.trim()}” is given a special definition. It means ${embeddedMeaning}.`;
   }
   return `In everyday terms, ${practicalRestatement(shortenSource(source, 240))}`;
 }

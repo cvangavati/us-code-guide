@@ -109,6 +109,24 @@ describe("Vercel public reader API", () => {
     expect(guide.keyPoints[1]).not.toContain("shall submit");
   });
 
+  it("explains public-records limits, fees, and court review in practical terms", () => {
+    const guide = sourceGroundedGuide({
+      heading: "Public records",
+      officialText: [
+        "Except to the extent that a person has actual and timely notice of the terms of it, a person may not be adversely affected by a matter required to be published and not so published.",
+        "Fees shall be limited to reasonable standard charges for document search, duplication, and review when records are requested for commercial use.",
+        "In any action by a requester regarding the waiver of fees under this section, the court shall determine the matter de novo.",
+      ],
+    });
+
+    expect(guide.keyPoints).toEqual([
+      "Line 1: An unpublished rule generally cannot be used against someone who did not receive timely notice of it.",
+      "Line 2: For commercial requests, fees can cover reasonable costs for searching, copying, and reviewing records.",
+      "Line 3: A court decides a fee-waiver dispute from the beginning, using the information the agency had at the time.",
+    ]);
+    expect(guide.keyPoints.join(" ")).not.toMatch(/except to the extent|shall be limited|determine the matter de novo/i);
+  });
+
   it("excludes a standalone derivation heading and explains a substantive public-records rule in practical language", async () => {
     const realFetch = globalThis.fetch;
     vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
