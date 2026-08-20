@@ -283,13 +283,13 @@ function explainLine(source: string) {
   return everydayWords(shortenSource(source, 240));
 }
 
-function sourceGroundedGuide(section: Awaited<ReturnType<typeof getOfficialSection>>) {
+export function sourceGroundedGuide(section: { heading: string; officialText: string[]; officialBlocks?: OfficialBlock[] }) {
   const paragraphs = section.officialText.filter(Boolean);
   const sentences = sourceSentences(paragraphs);
   const firstLine = paragraphs[0] ?? `This section addresses ${section.heading}.`;
   const conditionalSentence = sentences.find(sentence => /\b(unless|except|if|only if|subject to|provided that|notwithstanding)\b/i.test(sentence));
   const table = section.officialBlocks?.find(block => block.type === "table");
-  const keyPoints = paragraphs.slice(0, 5).map((paragraph, index) => `Line ${index + 1}: ${explainLine(paragraph)}`);
+  const keyPoints = paragraphs.map((paragraph, index) => `Line ${index + 1}: ${explainLine(paragraph)}`);
 
   if (table) {
     const headerWords = table.headers.slice(0, 3).join("; ");
@@ -304,11 +304,11 @@ function sourceGroundedGuide(section: Awaited<ReturnType<typeof getOfficialSecti
   return {
     label: "Plain-English guide — not legal advice" as const,
     summary: explainLine(firstLine),
-    keyPoints: keyPoints.slice(0, 5),
+    keyPoints,
     watchFor,
     trace: {
       summaryParagraphs: [1],
-      keyPointParagraphs: keyPoints.slice(0, 5).map(() => [1]),
+      keyPointParagraphs: keyPoints.map(() => [1]),
       watchForParagraphs: watchFor.map(() => [1]),
     },
     generated: true,

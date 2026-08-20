@@ -73,3 +73,5 @@
 - [x] Replace guide instructions and formal terminology with non-instructional, line-by-line everyday-English explanations of the displayed statutory text.
 - [x] Add regression tests for sentence-level common-English output and verify the rewritten guide through the live Vercel mutation.
 - [x] Exclude editorial source-history lines from the line-by-line plain-English guide so every displayed guide line explains statutory text.
+- [x] Explain every displayed statutory line in the Vercel everyday-English guide rather than limiting the guide to the first five lines.
+- [ ] Add full-line coverage tests and verify the expanded guide through the live Vercel mutation.

@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
 import { afterEach, describe, expect, it } from "vitest";
-import handler from "../api/trpc/[...path]";
+import handler, { sourceGroundedGuide } from "../api/trpc/[...path]";
 import type { AppRouter } from "./routers";
 
 const servers: ReturnType<typeof createServer>[] = [];
@@ -64,4 +64,15 @@ describe("Vercel public reader API", () => {
     expect(guide.keyPoints.join(" ")).not.toMatch(/read that sentence|should|mandatory wording/i);
     expect(guide.keyPoints.join(" ")).not.toMatch(/July|Stat\./i);
   }, 30_000);
+
+  it("creates a plain-English entry for every displayed statutory line without a five-line cap", () => {
+    const guide = sourceGroundedGuide({
+      heading: "Example section",
+      officialText: Array.from({ length: 7 }, (_, index) => `Line ${index + 1} has words to explain.`),
+    });
+
+    expect(guide.keyPoints).toHaveLength(7);
+    expect(guide.keyPoints[6]).toMatch(/^Line 7:/);
+    expect(guide.trace.keyPointParagraphs).toHaveLength(7);
+  });
 });
