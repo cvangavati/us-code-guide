@@ -53,6 +53,6 @@
 - [x] Confirm server-only credentials are never sent to the browser and public frontend configuration contains no secrets.
 - [x] Add automated secret-scanning and public-build checks that fail when likely credentials or private environment files are included.
 - [x] Document the project’s public-data and secret-handling boundary without disclosing sensitive values.
-- [ ] Verify the hardened project, then save and synchronize a GitHub checkpoint.
+- [x] Verify the hardened project, then save and synchronize a GitHub checkpoint.
 - [x] Add conservative public-response security headers and verify that API responses do not include unnecessary framework or environment details.
 - [x] Verify the hardened headers and absence of framework fingerprinting on a live `/api/trpc` response.
