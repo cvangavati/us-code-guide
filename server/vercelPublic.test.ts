@@ -1,6 +1,9 @@
 import { createServer } from "node:http";
+import { createTRPCClient, httpBatchLink } from "@trpc/client";
+import superjson from "superjson";
 import { afterEach, describe, expect, it } from "vitest";
 import handler from "../api/trpc/[...path]";
+import type { AppRouter } from "./routers";
 
 const servers: ReturnType<typeof createServer>[] = [];
 
@@ -24,4 +27,20 @@ describe("Vercel public reader API", () => {
     expect(response.headers.get("x-powered-by")).toBeNull();
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
   });
+
+  it("deserializes a section through the reader's superjson tRPC contract", async () => {
+    const server = createServer(handler);
+    servers.push(server);
+    await new Promise<void>(resolve => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("Expected a TCP server address");
+
+    const client = createTRPCClient<AppRouter>({
+      links: [httpBatchLink({ url: `http://127.0.0.1:${address.port}/api/trpc`, transformer: superjson })],
+    });
+    const section = await client.usCode.section.query({ title: 1, section: "2" });
+
+    expect(section.heading).toContain("County");
+    expect(section.officialText[0]).toContain("county");
+  }, 30_000);
 });

@@ -62,3 +62,4 @@
 - [ ] Resolve the Vercel `/api/trpc` function startup failure and verify a live non-fallback section response.
 - [x] Provide a Vercel-scoped public tRPC router for official-text and title-index retrieval without importing optional Manus OAuth, database, storage, or generation services.
 - [ ] Restore Vercel section retrieval for reader paths and prevent an empty reader state if the public API is unavailable.
+- [ ] Restore Vercel chapter and section-index retrieval so the external reader does not remain in a perpetual preview-loading state.

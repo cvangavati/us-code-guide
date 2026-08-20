@@ -100,6 +100,31 @@ function govInfoTitleUrl(title: number) {
   return `${GOVINFO_CONTENT_URL}/USCODE-${GOVINFO_ARCHIVE_YEAR}-title${title}/html/USCODE-${GOVINFO_ARCHIVE_YEAR}-title${title}.htm`;
 }
 
+function extractGovInfoTitleIndex(html: string, title: number) {
+  const matcher = new RegExp(`<!-- documentid:${title}_([A-Za-z0-9.-]+)[^>]*-->[\\s\\S]{0,900}?<h3[^>]*>([\\s\\S]*?)<\\/h3>`, "g");
+  const unique = new Map<string, { section: string; heading: string; chapter?: string }>();
+  let match: RegExpExecArray | null;
+  while ((match = matcher.exec(html)) !== null) {
+    const section = match[1];
+    const heading = decodeHtml(match[2].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim())
+      .replace(new RegExp(`^§?${section}\\.?\\s*`), "") || `Section ${section}`;
+    const chapter = match[0].match(/itempath:[^\n]*\/(CHAPTER[^\n/]+)/i)?.[1]?.replace(/\s+/g, " ").trim();
+    if (section && /^\d/.test(section) && !unique.has(section)) unique.set(section, { section, heading, chapter });
+    if (unique.size >= 80) break;
+  }
+  return Array.from(unique.values());
+}
+
+async function getTitleSectionIndex(title: number) {
+  try {
+    const response = await fetch(govInfoTitleUrl(title));
+    if (!response.ok) return [];
+    return extractGovInfoTitleIndex(await response.text(), title);
+  } catch {
+    return [];
+  }
+}
+
 async function getOfficialSection({ title, section }: Citation) {
   const sourceUrl = officialSectionUrl(title, section);
   try {
@@ -173,7 +198,7 @@ function parseCitation(value: unknown): Citation {
 async function executeProcedure(name: string, input: unknown) {
   const procedure = name.split(".").at(-1);
   if (procedure === "section") return responseEnvelope(await getOfficialSection(parseCitation(input)));
-  if (procedure === "titleSections") return responseEnvelope([]);
+  if (procedure === "titleSections") return responseEnvelope(await getTitleSectionIndex(parseCitation({ ...(input as object), section: "1" }).title));
   if (procedure === "titles") return responseEnvelope([]);
   return errorEnvelope("This public Vercel reader endpoint supports official section retrieval only.");
 }
